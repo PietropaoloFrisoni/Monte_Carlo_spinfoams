@@ -151,7 +151,7 @@ function self_energy(cutoff, Nmc)
     ampls = Float64[]
 
     draw_float_sample = Array{Float64}(undef, 1)
-    spins_draw = Array{HalfInt}(undef, 6)
+    spins_draw = Array{HalfInt}(undef, 7)
 
     # loop over partial cutoffs
     for pcutoff = onehalf:step:cutoff
@@ -159,7 +159,7 @@ function self_energy(cutoff, Nmc)
         Uniform_distribution = Uniform(0, pcutoff)
 
         # generate a list of all spins to compute
-        spins_all = NTuple{6,HalfInt}[]
+        spins_all = NTuple{7,HalfInt}[]
 
         counter = 0
 
@@ -202,7 +202,7 @@ function self_energy(cutoff, Nmc)
                         spins_draw[i] = half(draw_float_sample[1])
                     end
 
-                    a = 2 * (range[2] - range[1]) + 1
+                    a = 2 * (range[2] - range[1])
 
                     r, _ = intertwiner_range(spins_draw[1], spins_draw[2], spins_draw[3], jb)
                     isempty(r) || break
@@ -244,7 +244,7 @@ function self_energy(cutoff, Nmc)
                         spins_draw[i] = half(draw_float_sample[1])
                     end
 
-                    b = 2 * (range[2] - range[1]) + 1
+                    b = 2 * (range[2] - range[1])
 
                     r, _ = intertwiner_range(spins_draw[4], spins_draw[5], jb, spins_draw[1])
                     isempty(r) || break
@@ -278,7 +278,7 @@ function self_energy(cutoff, Nmc)
                         spins_draw[i] = half(draw_float_sample[1])
                     end
 
-                    c = 2 * (range[2] - range[1]) + 1
+                    c = 2 * (range[2] - range[1])
 
                     r, _ = intertwiner_range(spins_draw[6], jb, spins_draw[2], spins_draw[4])
                     isempty(r) || break
@@ -310,10 +310,10 @@ function self_energy(cutoff, Nmc)
 
                 #if (final_test_1 == true)
 
-                # TODO: add  weight * a * b * c * (2*(pcutoff))^3
+                spins_draw[7] = a * b * c * (2 * (pcutoff))^3
 
                 # must be computed
-                push!(spins_all, (spins_draw[1], spins_draw[2], spins_draw[3], spins_draw[4], spins_draw[5], spins_draw[6]))
+                push!(spins_all, (spins_draw[1], spins_draw[2], spins_draw[3], spins_draw[4], spins_draw[5], spins_draw[6], spins_draw[7]))
                 counter += 1
 
             end
@@ -330,7 +330,7 @@ function self_energy(cutoff, Nmc)
 
         @time tampl = @sync @distributed (+) for spins in spins_all
 
-            j23, j24, j25, j34, j35, j45 = spins
+            j23, j24, j25, j34, j35, j45, multeplicity = spins
 
             # restricted range of intertwiners
             r2, _ = intertwiner_range(jb, j25, j24, j23)
@@ -345,7 +345,7 @@ function self_energy(cutoff, Nmc)
             # contract
             dfj = (2j23 + 1) * (2j24 + 1) * (2j25 + 1) * (2j34 + 1) * (2j35 + 1) * (2j45 + 1)
 
-            dfj * dot(v.a, v.a)
+            dfj * dot(v.a, v.a) * multeplicity
 
         end
 
