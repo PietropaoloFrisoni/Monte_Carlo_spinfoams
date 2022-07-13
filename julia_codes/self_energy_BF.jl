@@ -40,7 +40,7 @@ function self_energy(cutoff)
     ampls = Float64[]
     
     # loop over partial cutoffs
-    for pcutoff = onehalf:step:cutoff
+    for pcutoff = 0:step:cutoff
         
         # generate a list of all spins to compute
         spins_all = NTuple{6, HalfInt}[]
