@@ -5,6 +5,7 @@ function init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER::String, Immirzi::Float64)
     conf = SL2Cfoam.Config(VerbosityOff, HighAccuracy, 200, 0)
     SL2Cfoam.cinit(DATA_SL2CFOAM_FOLDER, Immirzi, conf)
     # disable C library automatic parallelization
+    # TODO: set option to control this
     SL2Cfoam.set_OMP(false)
 end
 

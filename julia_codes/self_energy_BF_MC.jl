@@ -22,7 +22,7 @@ if (CUTOFF <= 1)
     error("please provide a larger cutoff")
 end
 
-STORE_FOLDER = "$(STORE_FOLDER)/data_MC/BF/cutoff_$(CUTOFF_FLOAT)"
+STORE_FOLDER = "$(STORE_FOLDER)/data_MC/BF/cutoff_$(CUTOFF_FLOAT)/MC_iterations_$(MONTE_CARLO_ITERATIONS)"
 mkpath(STORE_FOLDER)
 
 printstyled("initializing library...\n"; bold=true, color=:cyan)
@@ -32,7 +32,7 @@ println("done\n")
 
 function self_energy(cutoff, Nmc)
 
-    vec = [8, 73, 286, 758, 1728, 3399, 6242, 10564, 17164, 26453, 39666, 57306, 81164, 111811, 151726, 201512, 264480, 341217, 436022, 549406, 686824, 848639, 1041642, 1265964]
+    bulk_spins_factor = [8, 73, 286, 758, 1728, 3399, 6242, 10564, 17164, 26453, 39666, 57306, 81164, 111811, 151726, 201512, 264480, 341217, 436022, 549406, 686824, 848639, 1041642, 1265964]
 
     number_of_threads = Threads.nthreads()
 
@@ -41,30 +41,28 @@ function self_energy(cutoff, Nmc)
     jb = half(1)
 
     ampls = Float64[]
-    MC_ampls = Float64[]
-    pre_factor = 0
 
     draw_float_sample = Array{Float64}(undef, 1)
     spins_draw = Array{HalfInt8}(undef, 6)
 
-    cucu = 0
+    bulk_spins_dims_counter = 0
 
-    # this is pcutoff = 0
+    # pcutoff = 0 for jb = 1/2
     push!(ampls, 0.0)
 
     # loop over partial cutoffs
     for pcutoff = onehalf:step:cutoff
 
-        cucu += 1
+        bulk_spins_dims_counter += 1
 
         Uniform_distribution = Uniform(0, pcutoff)
 
         # generate a list of all spins to compute
         spins_all = NTuple{6,HalfInt}[]
 
-        counter = 0
+        MC_counter = 0
 
-        while (counter < Nmc)
+        while (MC_counter < Nmc)
 
             # sampling j23, j24, j25 for the draw [j23, j24, j25, jb]
             while true
@@ -129,13 +127,11 @@ function self_energy(cutoff, Nmc)
 
                 # must be computed
                 push!(spins_all, (spins_draw[1], spins_draw[2], spins_draw[3], spins_draw[4], spins_draw[5], spins_draw[6]))
-                counter += 1
+                MC_counter += 1
 
             end
 
         end
-
-        #println(spins_all)
 
         if isempty(spins_all)
             push!(ampls, 0.0)
@@ -164,18 +160,13 @@ function self_energy(cutoff, Nmc)
 
         end
 
+        # normalize the amplitude to get MC estimator
+        tampl = tampl * bulk_spins_factor[bulk_spins_dims_counter] / Nmc
+
         ampl = ampls[end] + tampl
+
+        log("Amplitude at partial cutoff = $pcutoff: $(ampl)")
         push!(ampls, ampl)
-
-        pre_factor += vec[cucu]
-        MC_ampl = ampl * pre_factor / Nmc
-
-        log("Amplitude at partial cutoff = $pcutoff: $(MC_ampl)")
-        log("pcutoff = $pcutoff")
-        log("vec[cucu] = $(vec[cucu])")
-        log("pre_factor = $(pre_factor)")
-
-        push!(MC_ampls, MC_ampl)
 
 
     end # partial cutoffs loop
@@ -194,6 +185,6 @@ printstyled("\nStarting computation with K = $(CUTOFF)...\n"; bold=true, color=:
 
 printstyled("\nSaving dataframe...\n"; bold=true, color=:cyan)
 df = DataFrame(amplitudes=ampls)
-CSV.write("$(STORE_FOLDER)/self_energy_10.csv", df)
+CSV.write("$(STORE_FOLDER)/self_energy.csv", df)
 
 printstyled("\nCompleted\n\n"; bold=true, color=:blue)

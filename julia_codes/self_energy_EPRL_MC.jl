@@ -33,7 +33,7 @@ if (CUTOFF <= 1)
     error("please provide a larger cutoff")
 end
 
-STORE_FOLDER = "$(STORE_FOLDER)/data_MC/EPRL/immirzi_$(IMMIRZI)/divergence/cutoff_$(CUTOFF_FLOAT)"
+STORE_FOLDER = "$(STORE_FOLDER)/data_MC/EPRL/immirzi_$(IMMIRZI)/cutoff_$(CUTOFF_FLOAT)/MC_iterations_$(MONTE_CARLO_ITERATIONS)"
 mkpath(STORE_FOLDER)
 
 printstyled("initializing library...\n"; bold=true, color=:cyan)
@@ -43,7 +43,7 @@ println("done\n")
 
 function self_energy_EPRL(cutoff, shells, Nmc)
 
-    vec = [8, 73, 286, 758, 1728, 3399, 6242, 10564, 17164, 26453, 39666, 57306, 81164, 111811, 151726, 201512, 264480, 341217, 436022, 549406, 686824, 848639, 1041642, 1265964]
+    bulk_spins_factor = [8, 73, 286, 758, 1728, 3399, 6242, 10564, 17164, 26453, 39666, 57306, 81164, 111811, 151726, 201512, 264480, 341217, 436022, 549406, 686824, 848639, 1041642, 1265964]
 
     number_of_threads = Threads.nthreads()
 
@@ -58,21 +58,24 @@ function self_energy_EPRL(cutoff, shells, Nmc)
 
     result_return = (ret=true, store=false, store_batches=false)
 
-    cucu = 0
+    bulk_spins_dims_counter = 0
+
+    # pcutoff = 0 for jb = 1/2
+        push!(ampls, 0.0)
 
     # loop over partial cutoffs
     for pcutoff = onehalf:step:cutoff
 
-        cucu += 1
+        bulk_spins_dims_counter += 1
 
         Uniform_distribution = Uniform(0, pcutoff)
 
         # generate a list of all spins to compute
         spins_all = NTuple{6,HalfInt}[]
 
-        counter = 0
+        MC_counter = 0
 
-        while (counter < Nmc)
+        while (MC_counter < Nmc)
 
             # sampling j23, j24, j25 for the draw [j23, j24, j25, jb]
             while true
@@ -137,7 +140,7 @@ function self_energy_EPRL(cutoff, shells, Nmc)
 
                 # must be computed
                 push!(spins_all, (spins_draw[1], spins_draw[2], spins_draw[3], spins_draw[4], spins_draw[5], spins_draw[6]))
-                counter += 1
+                MC_counter += 1
 
             end
 
@@ -170,7 +173,7 @@ function self_energy_EPRL(cutoff, shells, Nmc)
 
         end
 
-        tampl = tampl * vec[cucu] / Nmc
+        tampl = tampl * bulk_spins_factor[bulk_spins_dims_counter] / Nmc
 
         # if-else for integer spin case
         if isempty(ampls)
@@ -195,7 +198,7 @@ println("done\n")
 sleep(1)
 
 
-ampls_matrix = Array{Float64,2}(undef, convert(Int, 2 * CUTOFF), SHELL_MAX - SHELL_MIN + 1)
+ampls_matrix = Array{Float64,2}(undef, convert(Int, 2 * CUTOFF + 1), SHELL_MAX - SHELL_MIN + 1)
 
 printstyled("\nStarting computation with K = $(CUTOFF), Dl_min = $(SHELL_MIN), Dl_max = $(SHELL_MAX), Immirzi = $(IMMIRZI)...\n"; bold=true, color=:cyan)
 

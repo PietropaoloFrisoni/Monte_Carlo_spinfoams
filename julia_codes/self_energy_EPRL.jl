@@ -32,7 +32,7 @@ if (CUTOFF <= 1)
     error("please provide a larger cutoff")
 end
 
-STORE_FOLDER = "$(STORE_FOLDER)/data/EPRL/immirzi_$(IMMIRZI)/divergence/cutoff_$(CUTOFF_FLOAT)"
+STORE_FOLDER = "$(STORE_FOLDER)/data/EPRL/immirzi_$(IMMIRZI)/cutoff_$(CUTOFF_FLOAT)"
 mkpath(STORE_FOLDER)
 
 printstyled("initializing library...\n"; bold=true, color=:cyan)

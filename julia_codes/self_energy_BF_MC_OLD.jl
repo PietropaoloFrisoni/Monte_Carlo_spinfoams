@@ -135,8 +135,6 @@ function self_energy(cutoff, Nmc)
 
         end
 
-        #println(spins_all)
-
         if isempty(spins_all)
             push!(ampls, 0.0)
             push!(pre_factors, 0)
@@ -164,22 +162,18 @@ function self_energy(cutoff, Nmc)
 
         end
 
-        tampl = tampl * vec[cucu] / Nmc
-
         ampl = ampls[end] + tampl
-
         push!(ampls, ampl)
 
-        #pre_factor += vec[cucu]
-        #MC_ampl = ampl * pre_factor / Nmc
+        pre_factor += vec[cucu]
+        MC_ampl = ampl * pre_factor / Nmc
 
-        log("Amplitude at partial cutoff = $pcutoff: $(ampl)")
+        log("Amplitude at partial cutoff = $pcutoff: $(MC_ampl)")
         log("pcutoff = $pcutoff")
         log("vec[cucu] = $(vec[cucu])")
-        #log("pre_factor = $(pre_factor)")
+        log("pre_factor = $(pre_factor)")
 
-        #push!(MC_ampls, MC_ampl)
-
+        push!(MC_ampls, MC_ampl)
 
     end # partial cutoffs loop
 
