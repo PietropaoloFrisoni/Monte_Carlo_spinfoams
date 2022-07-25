@@ -1,4 +1,4 @@
-# Monte Carlo for EPRL spinfoam divergences 
+# VEGAS in spinfoams
 
 **_The Julia codes are parallelized on the available cores. In some cases we adopted a hybrid multilevel parallelization scheme, exploiting the available processes, threads and loop vectorization._** It is therefore advisable for the performance to use a number of workers \* threads equal to or less than the physical number of cores present on the system.
 
