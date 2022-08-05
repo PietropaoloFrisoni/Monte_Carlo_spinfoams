@@ -55,7 +55,7 @@ function self_energy(cutoff, Nmc)
 
         bulk_spins_dims_counter += 1
 
-        Uniform_distribution = Uniform(0, pcutoff)
+        Uniform_distribution = Uniform(0, twice(pcutoff)/2+0.5)
 
         # generate a list of all spins to compute
         spins_all = NTuple{6,HalfInt}[]
@@ -69,7 +69,7 @@ function self_energy(cutoff, Nmc)
 
                 for i = 1:3
                     rand!(Uniform_distribution, draw_float_sample)
-                    draw_float_sample[1] = round(Int64, 2 * draw_float_sample[1])
+                    draw_float_sample[1] = floor( 2 * draw_float_sample[1])
                     spins_draw[i] = half(draw_float_sample[1])
                 end
 
@@ -83,7 +83,7 @@ function self_energy(cutoff, Nmc)
 
                 for i = 4:5
                     rand!(Uniform_distribution, draw_float_sample)
-                    draw_float_sample[1] = round(Int64, 2 * draw_float_sample[1])
+                    draw_float_sample[1] = floor( 2 * draw_float_sample[1])
                     spins_draw[i] = half(draw_float_sample[1])
                 end
 
@@ -97,7 +97,7 @@ function self_energy(cutoff, Nmc)
 
                 for i = 6:6
                     rand!(Uniform_distribution, draw_float_sample)
-                    draw_float_sample[1] = round(Int64, 2 * draw_float_sample[1])
+                    draw_float_sample[1] = floor( 2 * draw_float_sample[1])
                     spins_draw[i] = half(draw_float_sample[1])
                 end
 

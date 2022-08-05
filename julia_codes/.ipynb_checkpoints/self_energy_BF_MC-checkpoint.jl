@@ -1,23 +1,12 @@
 using Distributed
 
-number_of_workers = nworkers()
-number_of_processes = nprocs()
-number_of_threads = Threads.nthreads()
-available_cpus = length(Sys.cpu_info())
+printstyled("\nSelf-energy BF divergence parallelized on $(nworkers()) worker(s)\n\n"; bold=true, color=:blue)
 
-printstyled("\nSelf energy EPRL divergence parallelized on $(number_of_workers) worker(s) and $(number_of_threads) thread(s)\n\n"; bold=true, color=:blue)
-
-if (number_of_workers * number_of_threads > available_cpus)
-    printstyled("WARNING: you are using more resources than available cores on this system. Performances will be affected\n\n"; bold=true, color=:red)
-end
-
-length(ARGS) < 6 && error("please use these 6 arguments: data_sl2cfoam_next_folder    cutoff    shell_min    shell_max     Immirzi    store_folder")
+length(ARGS) < 4 && error("please use these 3 arguments: data_sl2cfoam_next_folder    cutoff    store_folder    M_C_iterations")
 @eval @everywhere DATA_SL2CFOAM_FOLDER = $(ARGS[1])
-SHELL_MIN = parse(Int, ARGS[3])
-SHELL_MAX = parse(Int, ARGS[4])
-@eval @everywhere IMMIRZI = parse(Float64, $(ARGS[5]))
-@eval STORE_FOLDER = $(ARGS[6])
-MONTE_CARLO_ITERATIONS = parse(Int, ARGS[7])
+CUTOFF = parse(Int, ARGS[2])
+@eval STORE_FOLDER = $(ARGS[3])
+MONTE_CARLO_ITERATIONS = parse(Int, ARGS[4])
 
 printstyled("precompiling packages...\n"; bold=true, color=:cyan)
 @everywhere begin
@@ -33,15 +22,15 @@ if (CUTOFF <= 1)
     error("please provide a larger cutoff")
 end
 
-STORE_FOLDER = "$(STORE_FOLDER)/data_MC/EPRL/immirzi_$(IMMIRZI)/cutoff_$(CUTOFF_FLOAT)/MC_iterations_$(MONTE_CARLO_ITERATIONS)"
+STORE_FOLDER = "$(STORE_FOLDER)/data_MC/BF/cutoff_$(CUTOFF_FLOAT)/MC_iterations_$(MONTE_CARLO_ITERATIONS)"
 mkpath(STORE_FOLDER)
 
 printstyled("initializing library...\n"; bold=true, color=:cyan)
-@everywhere init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER, IMMIRZI)
+@everywhere init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER, 0.123) # fictitious Immirzi 
 println("done\n")
 
 
-function self_energy_EPRL(cutoff, shells, Nmc)
+function self_energy(cutoff, Nmc)
 
     bulk_spins_factor = [8, 73, 286, 758, 1728, 3399, 6242, 10564, 17164, 26453, 39666, 57306, 81164, 111811, 151726, 201512, 264480, 341217, 436022, 549406, 686824, 848639, 1041642, 1265964]
 
@@ -56,19 +45,17 @@ function self_energy_EPRL(cutoff, shells, Nmc)
     draw_float_sample = Array{Float64}(undef, 1)
     spins_draw = Array{HalfInt8}(undef, 6)
 
-    result_return = (ret=true, store=false, store_batches=false)
-
     bulk_spins_dims_counter = 0
 
     # pcutoff = 0 for jb = 1/2
-        push!(ampls, 0.0)
+    push!(ampls, 0.0)
 
     # loop over partial cutoffs
     for pcutoff = onehalf:step:cutoff
 
         bulk_spins_dims_counter += 1
 
-        Uniform_distribution = Uniform(0, twice(pcutoff)/2+0.5)
+        Uniform_distribution = Uniform(0, pcutoff+onehalf)
 
         # generate a list of all spins to compute
         spins_all = NTuple{6,HalfInt}[]
@@ -144,11 +131,11 @@ function self_energy_EPRL(cutoff, shells, Nmc)
 
             end
 
-
         end
 
         if isempty(spins_all)
             push!(ampls, 0.0)
+            push!(pre_factors, 0)
             continue
         end
 
@@ -164,7 +151,7 @@ function self_energy_EPRL(cutoff, shells, Nmc)
             rm = ((0, 0), r2, r3, r4, r5)
 
             # compute vertex
-            v = vertex_compute([jb, jb, jb, jb, j23, j24, j25, j34, j35, j45], shells, rm; result=result_return)
+            v = vertex_BF_compute([jb, jb, jb, jb, j23, j24, j25, j34, j35, j45], rm;)
 
             # contract
             dfj = (2j23 + 1) * (2j24 + 1) * (2j25 + 1) * (2j34 + 1) * (2j35 + 1) * (2j45 + 1)
@@ -173,18 +160,14 @@ function self_energy_EPRL(cutoff, shells, Nmc)
 
         end
 
+        # normalize the amplitude to get MC estimator
         tampl = tampl * bulk_spins_factor[bulk_spins_dims_counter] / Nmc
 
-        # if-else for integer spin case
-        if isempty(ampls)
-            ampl = tampl
-            log("Amplitude at partial cutoff = $pcutoff: $(ampl)")
-            push!(ampls, ampl)
-        else
-            ampl = ampls[end] + tampl
-            log("Amplitude at partial cutoff = $pcutoff: $(ampl)")
-            push!(ampls, ampl)
-        end
+        ampl = ampls[end] + tampl
+
+        log("Amplitude at partial cutoff = $pcutoff: $(ampl)")
+        push!(ampls, ampl)
+
 
     end # partial cutoffs loop
 
@@ -193,31 +176,15 @@ function self_energy_EPRL(cutoff, shells, Nmc)
 end
 
 printstyled("Pre-compiling the function...\n"; bold=true, color=:cyan)
-@time self_energy_EPRL(1, 0, 10);
+@time self_energy(1, 10);
 println("done\n")
 sleep(1)
 
-
-ampls_matrix = Array{Float64,2}(undef, convert(Int, 2 * CUTOFF + 1), SHELL_MAX - SHELL_MIN + 1)
-
-printstyled("\nStarting computation with K = $(CUTOFF), Dl_min = $(SHELL_MIN), Dl_max = $(SHELL_MAX), Immirzi = $(IMMIRZI)...\n"; bold=true, color=:cyan)
-
-column_labels = String[]
-
-for Dl = SHELL_MIN:SHELL_MAX
-
-    printstyled("\nCurrent Dl = $(Dl)...\n"; bold=true, color=:magenta)
-    @time ampls = self_energy_EPRL(CUTOFF, Dl, MONTE_CARLO_ITERATIONS)
-    push!(column_labels, "Dl = $(Dl)")
-    ampls_matrix[:, Dl-SHELL_MIN+1] = ampls[:]
-
-end
+printstyled("\nStarting computation with K = $(CUTOFF)...\n"; bold=true, color=:cyan)
+@time ampls = self_energy(CUTOFF, MONTE_CARLO_ITERATIONS);
 
 printstyled("\nSaving dataframe...\n"; bold=true, color=:cyan)
-df = DataFrame(ampls_matrix, column_labels)
-CSV.write("$(STORE_FOLDER)/self_energy_Dl_min_$(SHELL_MIN)_Dl_max_$(SHELL_MAX).csv", df)
+df = DataFrame(amplitudes=ampls)
+CSV.write("$(STORE_FOLDER)/self_energy.csv", df)
 
 printstyled("\nCompleted\n\n"; bold=true, color=:blue)
-
-
-

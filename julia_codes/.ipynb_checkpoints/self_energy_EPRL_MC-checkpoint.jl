@@ -68,7 +68,7 @@ function self_energy_EPRL(cutoff, shells, Nmc)
 
         bulk_spins_dims_counter += 1
 
-        Uniform_distribution = Uniform(0, twice(pcutoff)/2+0.5)
+        Uniform_distribution = Uniform(0, pcutoff+onehalf)
 
         # generate a list of all spins to compute
         spins_all = NTuple{6,HalfInt}[]
