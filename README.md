@@ -1,6 +1,6 @@
 # Monte Carlo divergences
 
-**_The Julia codes are parallelized on the available cores.** It is therefore advisable for the performance to parallelize the codes keeping into account the number of CPU cores present on the system.
+**The Julia codes are parallelized on the available cores.** It is therefore advisable for the performance to parallelize the codes keeping into account the number of CPU cores present on the system.
 
 A full list of the employed Julia packages can be found in `./julia_codes/pkgs.jl`. **Before executing the codes, all packages must be installed.**
 
