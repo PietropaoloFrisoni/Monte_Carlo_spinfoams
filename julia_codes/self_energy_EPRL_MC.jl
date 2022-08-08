@@ -43,8 +43,6 @@ println("done\n")
 
 function self_energy_EPRL(cutoff, shells, Nmc)
 
-    bulk_spins_factor = [8, 73, 286, 758, 1728, 3399, 6242, 10564, 17164, 26453, 39666, 57306, 81164, 111811, 151726, 201512, 264480, 341217, 436022, 549406, 686824, 848639, 1041642, 1265964]
-
     number_of_threads = Threads.nthreads()
 
     # set boundary
@@ -58,92 +56,33 @@ function self_energy_EPRL(cutoff, shells, Nmc)
 
     result_return = (ret=true, store=false, store_batches=false)
 
-    bulk_spins_dims_counter = 0
-
-    # pcutoff = 0 for jb = 1/2
-        push!(ampls, 0.0)
-
     # loop over partial cutoffs
-    for pcutoff = onehalf:step:cutoff
+    for pcutoff = 0:step:cutoff
 
-        bulk_spins_dims_counter += 1
-
-        Uniform_distribution = Uniform(0, twice(pcutoff)/2+0.5)
-
-        # generate a list of all spins to compute
+        # generate a list of all spins
         spins_all = NTuple{6,HalfInt}[]
 
-        MC_counter = 0
+        for j23::HalfInt = 0:onehalf:pcutoff, j24::HalfInt = 0:onehalf:pcutoff, j25::HalfInt = 0:onehalf:pcutoff,
+            j34::HalfInt = 0:onehalf:pcutoff, j35::HalfInt = 0:onehalf:pcutoff, j45::HalfInt = 0:onehalf:pcutoff
 
-        while (MC_counter < Nmc)
+            # skip if computed in lower partial cutoff
+            j23 <= (pcutoff - step) && j24 <= (pcutoff - step) &&
+                j25 <= (pcutoff - step) && j34 <= (pcutoff - step) &&
+                j35 <= (pcutoff - step) && j45 <= (pcutoff - step) && continue
 
-            # sampling j23, j24, j25 for the draw [j23, j24, j25, jb]
-            while true
+            # skip if any intertwiner range empty
+            r2, _ = intertwiner_range(jb, j25, j24, j23)
+            r3, _ = intertwiner_range(j23, jb, j34, j35)
+            r4, _ = intertwiner_range(j34, j24, jb, j45)
+            r5, _ = intertwiner_range(j45, j35, j25, jb)
 
-                for i = 1:3
-                    rand!(Uniform_distribution, draw_float_sample)
-                    draw_float_sample[1] = floor( 2 * draw_float_sample[1])
-                    spins_draw[i] = half(draw_float_sample[1])
-                end
+            isempty(r2) && continue
+            isempty(r3) && continue
+            isempty(r4) && continue
+            isempty(r5) && continue
 
-                r, _ = intertwiner_range(spins_draw[1], spins_draw[2], spins_draw[3], jb)
-                isempty(r) || break
-
-            end
-
-            # sampling j34, j35 for the draw [j34, j35, jb, j23]
-            while true
-
-                for i = 4:5
-                    rand!(Uniform_distribution, draw_float_sample)
-                    draw_float_sample[1] = floor( 2 * draw_float_sample[1])
-                    spins_draw[i] = half(draw_float_sample[1])
-                end
-
-                r, _ = intertwiner_range(spins_draw[4], spins_draw[5], jb, spins_draw[1])
-                isempty(r) || break
-
-            end
-
-            # sampling j45 for the draw [j45, jb, j24, j34]
-            while true
-
-                for i = 6:6
-                    rand!(Uniform_distribution, draw_float_sample)
-                    draw_float_sample[1] = floor( 2 * draw_float_sample[1])
-                    spins_draw[i] = half(draw_float_sample[1])
-                end
-
-                r, _ = intertwiner_range(spins_draw[6], jb, spins_draw[2], spins_draw[4])
-                isempty(r) || break
-
-            end
-
-            final_test_1 = false
-
-            # check that draw [jb, j25, j35, j45] satisfies triangular inequalities
-            r, _ = intertwiner_range(jb, spins_draw[3], spins_draw[5], spins_draw[6])
-            if (!isempty(r))
-                final_test_1 = true
-            end
-
-            final_test_2 = false
-
-            # check that at least one spin is equal to pcutoff 
-            for i = 1:6
-                if (spins_draw[i] == pcutoff)
-                    final_test_2 = true
-                end
-            end
-
-            if (final_test_1 == true && final_test_2 == true)
-
-                # must be computed
-                push!(spins_all, (spins_draw[1], spins_draw[2], spins_draw[3], spins_draw[4], spins_draw[5], spins_draw[6]))
-                MC_counter += 1
-
-            end
-
+            # must be computed
+            push!(spins_all, (j23, j24, j25, j34, j35, j45))
 
         end
 
@@ -152,9 +91,13 @@ function self_energy_EPRL(cutoff, shells, Nmc)
             continue
         end
 
-        @time tampl = @sync @distributed (+) for spins in spins_all
+        number_bulk_spins = size(spins_all)[1]
 
-            j23, j24, j25, j34, j35, j45 = spins
+        indices_spins_MC = rand(1:number_bulk_spins, Nmc)
+
+        @time tampl = @sync @distributed (+) for index_MC in indices_spins_MC
+
+            j23, j24, j25, j34, j35, j45 = spins_all[index_MC]
 
             # restricted range of intertwiners
             r2, _ = intertwiner_range(jb, j25, j24, j23)
@@ -173,18 +116,13 @@ function self_energy_EPRL(cutoff, shells, Nmc)
 
         end
 
-        tampl = tampl * bulk_spins_factor[bulk_spins_dims_counter] / Nmc
+        # normalize the amplitude to get MC estimator
+        tampl = tampl * number_bulk_spins / Nmc
 
-        # if-else for integer spin case
-        if isempty(ampls)
-            ampl = tampl
-            log("Amplitude at partial cutoff = $pcutoff: $(ampl)")
-            push!(ampls, ampl)
-        else
-            ampl = ampls[end] + tampl
-            log("Amplitude at partial cutoff = $pcutoff: $(ampl)")
-            push!(ampls, ampl)
-        end
+        ampl = ampls[end] + tampl
+
+        log("Amplitude at partial cutoff = $pcutoff: $(ampl)")
+        push!(ampls, ampl)
 
     end # partial cutoffs loop
 

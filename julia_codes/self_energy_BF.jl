@@ -38,19 +38,19 @@ function self_energy(cutoff)
     jb = half(1)
 
     ampls = Float64[]
-    
+
     # loop over partial cutoffs
     for pcutoff = 0:step:cutoff
-        
+
         # generate a list of all spins to compute
-        spins_all = NTuple{6, HalfInt}[]
+        spins_all = NTuple{6,HalfInt}[]
         for j23::HalfInt = 0:onehalf:pcutoff, j24::HalfInt = 0:onehalf:pcutoff, j25::HalfInt = 0:onehalf:pcutoff,
             j34::HalfInt = 0:onehalf:pcutoff, j35::HalfInt = 0:onehalf:pcutoff, j45::HalfInt = 0:onehalf:pcutoff
-            
+
             # skip if computed in lower partial cutoff
-            j23 <= (pcutoff-step) && j24 <= (pcutoff-step) &&
-            j25 <= (pcutoff-step) && j34 <= (pcutoff-step) &&
-            j35 <= (pcutoff-step) && j45 <= (pcutoff-step) && continue
+            j23 <= (pcutoff - step) && j24 <= (pcutoff - step) &&
+                j25 <= (pcutoff - step) && j34 <= (pcutoff - step) &&
+                j35 <= (pcutoff - step) && j45 <= (pcutoff - step) && continue
 
             # skip if any intertwiner range empty
             r2, _ = intertwiner_range(jb, j25, j24, j23)
@@ -67,8 +67,6 @@ function self_energy(cutoff)
             push!(spins_all, (j23, j24, j25, j34, j35, j45))
 
         end
-
-        println(size(spins_all))
 
         if isempty(spins_all)
             push!(ampls, 0.0)
@@ -90,8 +88,8 @@ function self_energy(cutoff)
             v = vertex_BF_compute([jb, jb, jb, jb, j23, j24, j25, j34, j35, j45], rm;)
 
             # contract
-            dfj = (2j23+1) * (2j24+1) * (2j25+1) * (2j34+1) * (2j35+1) * (2j45+1)
-            
+            dfj = (2j23 + 1) * (2j24 + 1) * (2j25 + 1) * (2j34 + 1) * (2j35 + 1) * (2j45 + 1)
+
             dfj * dot(v.a, v.a)
 
         end
