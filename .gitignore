@@ -30,3 +30,5 @@ docs/site/
 Manifest.toml
 
 
+# Folder with Jupyter checkpoints
+.ipynb_checkpoints
