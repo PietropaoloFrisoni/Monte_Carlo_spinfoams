@@ -4,7 +4,9 @@ cff-version: 1.2.0
 message: 'If you use this software, please cite it as below.'
 authors:
     - family-names: Frisoni
-      given-names: Pietropaolo 
+      given-names: Pietropaolo
+    - family-names: Dona
+      given-names: Pietro
 title: TODO
 version: 1.0.1
 doi: TODO
