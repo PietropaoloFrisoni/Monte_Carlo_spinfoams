@@ -129,7 +129,7 @@ printstyled("Pre-compiling the function...\n"; bold=true, color=:cyan)
 println("done\n")
 sleep(1)
 
-
+#=
 ampls_matrix = Array{Float64,2}(undef, convert(Int, 2 * CUTOFF + 1), SHELL_MAX - SHELL_MIN + 1)
 
 printstyled("\nStarting computation with K = $(CUTOFF), Dl_min = $(SHELL_MIN), Dl_max = $(SHELL_MAX), Immirzi = $(IMMIRZI)...\n"; bold=true, color=:cyan)
@@ -148,5 +148,27 @@ end
 printstyled("\nSaving dataframe...\n"; bold=true, color=:cyan)
 df = DataFrame(ampls_matrix, column_labels)
 CSV.write("$(STORE_FOLDER)/self_energy_Dl_min_$(SHELL_MIN)_Dl_max_$(SHELL_MAX).csv", df)
+
+=#
+
+
+column_labels = ["amp"]
+
+for Dl = SHELL_MIN:SHELL_MAX
+
+    printstyled("\nCurrent Dl = $(Dl)...\n"; bold=true, color=:magenta)
+    @time ampls = self_energy_EPRL(CUTOFF, Dl)
+    #push!(column_labels, "Dl_$(Dl)") 
+    #ampls_matrix[:, Dl-SHELL_MIN+1] = ampls[:]
+    #stds_matrix[:, Dl-SHELL_MIN+1] = stds[:]
+
+    printstyled("\nSaving dataframe...\n"; bold=true, color=:cyan)
+    df = DataFrame([ampls], column_labels)
+
+    CSV.write("$(STORE_FOLDER)/self_energy_Dl_$(Dl).csv", df)
+
+end
+
+
 
 printstyled("\nCompleted\n\n"; bold=true, color=:blue)
