@@ -43,16 +43,13 @@ println("done\n")
 
 function self_energy_EPRL(cutoff, shells, Nmc)
 
-    number_of_threads = Threads.nthreads()
-
     # set boundary
     step = onehalf = half(1)
     jb = half(1)
 
     ampls = Float64[]
-
-    draw_float_sample = Array{Float64}(undef, 1)
-    spins_draw = Array{HalfInt8}(undef, 6)
+    stds = Float64[]
+    nconfs = Int64[]
 
     result_return = (ret=true, store=false, store_batches=false)
 
@@ -88,14 +85,25 @@ function self_energy_EPRL(cutoff, shells, Nmc)
 
         if isempty(spins_all)
             push!(ampls, 0.0)
+            push!(stds, 0.0)
+            push!(nconfs, 0)
             continue
         end
 
-        number_bulk_spins = size(spins_all)[1]
+        tnconf = size(spins_all)[1]
 
-        indices_spins_MC = rand(1:number_bulk_spins, Nmc)
+        distr = Uniform(1, tnconf + 1)
 
-        @time tampl = @sync @distributed (+) for index_MC in indices_spins_MC
+        draw_float_sample = Array{Float64}(undef, 1)
+
+        bulk_ampls = SharedArray{Float64}(Nmc)
+        bulk_ampls[:] .= 0
+
+        @time @sync @distributed for bulk_ampls_index in eachindex(bulk_ampls)
+
+            rand!(distr, draw_float_sample)
+
+            index_MC = round(Int64, floor(draw_float_sample[1]))
 
             j23, j24, j25, j34, j35, j45 = spins_all[index_MC]
 
@@ -112,21 +120,38 @@ function self_energy_EPRL(cutoff, shells, Nmc)
             # contract
             dfj = (2j23 + 1) * (2j24 + 1) * (2j25 + 1) * (2j34 + 1) * (2j35 + 1) * (2j45 + 1)
 
-            dfj * dot(v.a, v.a)
+            bulk_ampls[bulk_ampls_index] = dfj * dot(v.a, v.a)
 
         end
 
-        # normalize the amplitude to get MC estimator
-        tampl = tampl * number_bulk_spins / Nmc
+        tampl = mean(bulk_ampls)
+
+        tampl_var = 0.0
+
+        for i = 1:Nmc
+            tampl_var += (bulk_ampls[i] - tampl)^2
+        end
+
+        tampl_var /= (Nmc - 1)
+
+        # normalize
+        tampl = tampl * tnconf
+        tampl_std = sqrt(tampl_var * (tnconf^2) / Nmc)
 
         ampl = ampls[end] + tampl
+        std = stds[end] + tampl_std
+        nconf = nconfs[end] + tnconf
 
         log("Amplitude at partial cutoff = $pcutoff: $(ampl)")
         push!(ampls, ampl)
+        log("Amplitude std at partial cutoff = $pcutoff: $(std)")
+        push!(stds, std)
+        log("Bulk spins configs at partial cutoff = $pcutoff: $(nconf)")
+        push!(nconfs, nconf)
 
     end # partial cutoffs loop
 
-    ampls
+    nconfs, ampls, stds
 
 end
 
@@ -137,6 +162,7 @@ sleep(1)
 
 
 ampls_matrix = Array{Float64,2}(undef, convert(Int, 2 * CUTOFF + 1), SHELL_MAX - SHELL_MIN + 1)
+stds_matrix = Array{Float64,2}(undef, convert(Int, 2 * CUTOFF + 1), SHELL_MAX - SHELL_MIN + 1)
 
 printstyled("\nStarting computation with K = $(CUTOFF), Dl_min = $(SHELL_MIN), Dl_max = $(SHELL_MAX), Immirzi = $(IMMIRZI)...\n"; bold=true, color=:cyan)
 
@@ -145,9 +171,11 @@ column_labels = String[]
 for Dl = SHELL_MIN:SHELL_MAX
 
     printstyled("\nCurrent Dl = $(Dl)...\n"; bold=true, color=:magenta)
-    @time ampls = self_energy_EPRL(CUTOFF, Dl, MONTE_CARLO_ITERATIONS)
-    push!(column_labels, "Dl = $(Dl)")
+    @time nconfs, ampls, stds = self_energy_EPRL(CUTOFF, Dl, MONTE_CARLO_ITERATIONS)
+    push!(column_labels, "amp_Dl_$(Dl)") 
+    push!(column_labels, "std_Dl_$(Dl)")
     ampls_matrix[:, Dl-SHELL_MIN+1] = ampls[:]
+    stds_matrix[:, Dl-SHELL_MIN+1] = stds[:]
 
 end
 

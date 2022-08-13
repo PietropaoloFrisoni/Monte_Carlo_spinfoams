@@ -9,3 +9,4 @@ using LoopVectorization
 using LinearAlgebra
 using Random 
 using Distributions
+using SharedArrays
