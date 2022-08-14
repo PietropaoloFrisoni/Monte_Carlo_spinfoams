@@ -20,7 +20,7 @@ SHELL_MAX = parse(Int, ARGS[4])
 
 printstyled("precompiling packages...\n"; bold=true, color=:cyan)
 @everywhere begin
-    include("pkgs.jl")
+    include("../inc/pkgs.jl")
     include("init.jl")
 end
 println("done\n")

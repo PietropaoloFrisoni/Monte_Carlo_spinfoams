@@ -1,18 +1,27 @@
 using Distributed
 
 number_of_workers = nworkers()
+number_of_processes = nprocs()
+number_of_threads = Threads.nthreads()
+available_cpus = length(Sys.cpu_info())
 
-printstyled("\nSelf-energy BF divergence parallelized on $(number_of_workers) worker(s)\n\n"; bold=true, color=:blue)
+printstyled("\nSelf energy EPRL divergence parallelized on $(number_of_workers) worker(s) and $(number_of_threads) thread(s)\n\n"; bold=true, color=:blue)
 
-length(ARGS) < 4 && error("please use these 3 arguments: data_sl2cfoam_next_folder    cutoff    store_folder    M_C_iterations")
+if (number_of_workers * number_of_threads > available_cpus)
+    printstyled("WARNING: you are using more resources than available cores on this system. Performances will be affected\n\n"; bold=true, color=:red)
+end
+
+length(ARGS) < 6 && error("please use these 6 arguments: data_sl2cfoam_next_folder    cutoff    shell_min    shell_max     Immirzi    store_folder")
 @eval @everywhere DATA_SL2CFOAM_FOLDER = $(ARGS[1])
-CUTOFF = parse(Int, ARGS[2])
-@eval STORE_FOLDER = $(ARGS[3])
-MONTE_CARLO_ITERATIONS = parse(Int, ARGS[4])
+SHELL_MIN = parse(Int, ARGS[3])
+SHELL_MAX = parse(Int, ARGS[4])
+@eval @everywhere IMMIRZI = parse(Float64, $(ARGS[5]))
+@eval STORE_FOLDER = $(ARGS[6])
+MONTE_CARLO_ITERATIONS = parse(Int, ARGS[7])
 
 printstyled("precompiling packages...\n"; bold=true, color=:cyan)
 @everywhere begin
-    include("pkgs.jl")
+    include("../inc/pkgs.jl")
     include("init.jl")
 end
 println("done\n")
@@ -24,15 +33,15 @@ if (CUTOFF <= 1)
     error("please provide a larger cutoff")
 end
 
-STORE_FOLDER = "$(STORE_FOLDER)/data_MC/BF/cutoff_$(CUTOFF_FLOAT)/MC_iterations_$(MONTE_CARLO_ITERATIONS)"
+STORE_FOLDER = "$(STORE_FOLDER)/data_MC/EPRL/immirzi_$(IMMIRZI)/cutoff_$(CUTOFF_FLOAT)/MC_iterations_$(MONTE_CARLO_ITERATIONS)"
 mkpath(STORE_FOLDER)
 
 printstyled("initializing library...\n"; bold=true, color=:cyan)
-@everywhere init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER, 0.123) # fictitious Immirzi 
+@everywhere init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER, IMMIRZI)
 println("done\n")
 
 
-function self_energy(cutoff, Nmc, number_of_workers)
+function self_energy_EPRL(cutoff, shells, Nmc)
 
     # set boundary
     step = onehalf = half(1)
@@ -41,6 +50,8 @@ function self_energy(cutoff, Nmc, number_of_workers)
     ampls = Float64[]
     stds = Float64[]
     nconfs = Int64[]
+
+    result_return = (ret=true, store=false, store_batches=false)
 
     # loop over partial cutoffs
     for pcutoff = 0:step:cutoff
@@ -104,7 +115,7 @@ function self_energy(cutoff, Nmc, number_of_workers)
             rm = ((0, 0), r2, r3, r4, r5)
 
             # compute vertex
-            v = vertex_BF_compute([jb, jb, jb, jb, j23, j24, j25, j34, j35, j45], rm;)
+            v = vertex_compute([jb, jb, jb, jb, j23, j24, j25, j34, j35, j45], shells, rm; result=result_return)
 
             # contract
             dfj = (2j23 + 1) * (2j24 + 1) * (2j25 + 1) * (2j34 + 1) * (2j35 + 1) * (2j45 + 1)
@@ -129,7 +140,7 @@ function self_energy(cutoff, Nmc, number_of_workers)
 
         ampl = ampls[end] + tampl
         std = stds[end] + tampl_std
-        nconf = nconfs[end] + tnconf 
+        nconf = nconfs[end] + tnconf
 
         log("Amplitude at partial cutoff = $pcutoff: $(ampl)")
         push!(ampls, ampl)
@@ -145,18 +156,40 @@ function self_energy(cutoff, Nmc, number_of_workers)
 end
 
 printstyled("Pre-compiling the function...\n"; bold=true, color=:cyan)
-@time self_energy(1, 10, 1);
+@time self_energy_EPRL(1, 0, 10);
 println("done\n")
 sleep(1)
 
-printstyled("\nStarting computation with K = $(CUTOFF)...\n"; bold=true, color=:cyan)
-@time nconfs, ampls, stds = self_energy(CUTOFF, MONTE_CARLO_ITERATIONS, number_of_workers);
+
+#ampls_matrix = Array{Float64,2}(undef, convert(Int, 2 * CUTOFF + 1), SHELL_MAX - SHELL_MIN + 1)
+#stds_matrix = Array{Float64,2}(undef, convert(Int, 2 * CUTOFF + 1), SHELL_MAX - SHELL_MIN + 1)
+
+printstyled("\nStarting computation with K = $(CUTOFF), Dl_min = $(SHELL_MIN), Dl_max = $(SHELL_MAX), Immirzi = $(IMMIRZI)...\n"; bold=true, color=:cyan)
 
 column_labels = ["n_confs", "amp", "std"]
 
-printstyled("\nSaving dataframe...\n"; bold=true, color=:cyan)
-df = DataFrame([nconfs, ampls, stds], column_labels)
+for Dl = SHELL_MIN:SHELL_MAX
 
-CSV.write("$(STORE_FOLDER)/self_energy.csv", df)
+    printstyled("\nCurrent Dl = $(Dl)...\n"; bold=true, color=:magenta)
+    @time nconfs, ampls, stds = self_energy_EPRL(CUTOFF, Dl, MONTE_CARLO_ITERATIONS)
+    #push!(column_labels, "Dl_$(Dl)") 
+    #ampls_matrix[:, Dl-SHELL_MIN+1] = ampls[:]
+    #stds_matrix[:, Dl-SHELL_MIN+1] = stds[:]
+
+    printstyled("\nSaving dataframe...\n"; bold=true, color=:cyan)
+    df = DataFrame([nconfs, ampls, stds], column_labels)
+
+    CSV.write("$(STORE_FOLDER)/self_energy_Dl_$(Dl).csv", df)
+
+end
+
+#printstyled("\nSaving dataframe...\n"; bold=true, color=:cyan)
+#df_amps = DataFrame(ampls_matrix, column_labels)
+#df_stds = DataFrame(stds_matrix, column_labels)
+#CSV.write("$(STORE_FOLDER)/self_energy_Dl_min_$(SHELL_MIN)_Dl_max_$(SHELL_MAX).csv", df_amps)
+#CSV.write("$(STORE_FOLDER)/self_energy_Dl_min_$(SHELL_MIN)_Dl_max_$(SHELL_MAX).csv", df_stds)
 
 printstyled("\nCompleted\n\n"; bold=true, color=:blue)
+
+
+
