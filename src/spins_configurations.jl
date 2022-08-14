@@ -1,7 +1,7 @@
 # compute the self-energy spins configurations for all partial cutoffs up to cutoff
-function self_energy_spins_conf(cutoff, jb::HalfInt, configs_path::String)
+function self_energy_spins_conf(cutoff, jb::HalfInt, configs_path::String, step=half(1))
 
-    step = onehalf = half(1)
+    onehalf = half(1)
 
     # loop over partial cutoffs
     for pcutoff = 0:step:cutoff
@@ -34,7 +34,41 @@ function self_energy_spins_conf(cutoff, jb::HalfInt, configs_path::String)
         end
 
         # store spins configurations 
-        @save "$(configs_path)/spins_configurations_pcutoff_$(twice(pcutoff)/2).jld2" spins_configurations
+        @save "$(configs_path)/spins_configurations_pcutoff_$(twice(pcutoff)/2)_jb_$(twice(jb)/2).jld2" spins_configurations
+
+    end
+
+end
+
+
+# compute the Monte Carlo self-energy indices for spins configurations for all partial cutoffs up to cutoff
+function self_energy_MC_spins_conf(cutoff, Nmc::Int, jb::HalfInt, configs_path::String, MC_configs_path::String, step=half(1))
+
+    # loop over partial cutoffs
+    for pcutoff = 0:step:cutoff
+
+        file_to_load = "$(configs_path)/spins_configurations_pcutoff_$(twice(pcutoff)/2)_jb_$(twice(jb)/2).jld2"
+
+        if (!isfile(file_to_load))
+            error("spins configurations for pcutoff $(twice(pcutoff)/2) and jb $(twice(jb)/2) must be computed first\n")
+        end
+
+        # load list of all spins to compute
+        @load "$(configs_path)/spins_configurations_pcutoff_$(twice(pcutoff)/2)_jb_$(twice(jb)/2).jld2" spins_configurations
+
+        MC_indices_spins_configurations = Array{Int32}(undef, Nmc)
+
+        total_number_spins_configs = size(spins_configurations)[1]
+        distr = Uniform(1, total_number_spins_configs + 1)
+        draw_float_sample = Array{Float64}(undef, 1)
+
+        for n = 1:Nmc
+            rand!(distr, draw_float_sample)
+            MC_indices_spins_configurations[n] = round(Int64, floor(draw_float_sample[1]))
+        end
+
+        # store MC spins indices 
+        @save "$(MC_configs_path)/MC_spins_indices_pcutoff_$(twice(pcutoff)/2)_Nmc_$(Nmc)_jb_$(twice(jb)/2).jld2" MC_indices_spins_configurations
 
     end
 
