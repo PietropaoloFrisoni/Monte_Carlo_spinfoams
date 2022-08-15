@@ -6,7 +6,7 @@ A full list of the employed Julia packages can be found in `./inc/pkgs.jl`. **Be
 
 **The Julia's Just-in-Time compiler is such that the first execution of functions is considerably slower that following ones, and it also allocates much more memory**. To avoid this, you can use the [DaemonMode package](https://github.com/dmolina/DaemonMode.jl).
 
-## Usage:
+## Usage
 
 To execute the Julia codes (on a single machine with the synthax below) you can run the following command:
 
