@@ -5,8 +5,10 @@ message: 'If you use this software, please cite it as below.'
 authors:
     - family-names: Frisoni
       given-names: Pietropaolo 
+    - family-names: Pietro
+      given-names: Donà       
 title: TODO
 version: 1.0.1
 doi: TODO
-date-released: 2022-05-20
+date-released: TODO
 url: https://github.com/PietropaoloFrisoni/Monte_Carlo_spinfoams

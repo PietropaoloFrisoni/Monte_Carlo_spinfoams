@@ -14,4 +14,24 @@ To execute the Julia codes (on a single machine with the synthax below) you can 
 $JULIA_EXECUTABLE_PATH   -p   [N-1]    $JULIA_CODE_PATH   $ARGS
 ```
 
-where [N-1] is the number of workers.
+where [N-1] is the number of workers. The `ARGS` parameter depends on the specific kind of computation. We show some examples below.
+
+### Example: BF Monte Carlo
+
+```
+ARGS = $CUTOFF    $JB    $STORE_FOLDER    $MONTE_CARLO_ITERATIONS    $COMPUTE_SPINS_CONFIGURATIONS    $COMPUTE_MC_INDICES
+```
+
+where:
+
+- `CUTOFF`: the maximum value of bulks spins
+
+- `JB`: value of boundary spins
+
+- `STORE_FOLDER`: folder where data are saved
+
+- `MONTE_CARLO_ITERATIONS`: number of monte carlo sampling
+
+- `COMPUTE_SPINS_CONFIGURATIONS`: if `true` computes the spins configurations, if `false` it doesn't (in this case they must have been previously computed)
+
+- `COMPUTE_MC_INDICES`: if `true` computes the monte carlo indices, if `false` it doesn't (in this case they must have been previously computed)

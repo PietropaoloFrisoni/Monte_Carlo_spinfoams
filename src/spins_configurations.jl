@@ -3,6 +3,8 @@ function self_energy_spins_conf(cutoff, jb::HalfInt, configs_path::String, step=
 
     onehalf = half(1)
 
+    total_number_spins_configs = Int[]
+
     # loop over partial cutoffs
     for pcutoff = 0:step:cutoff
 
@@ -33,10 +35,21 @@ function self_energy_spins_conf(cutoff, jb::HalfInt, configs_path::String, step=
 
         end
 
-        # store spins configurations 
-        @save "$(configs_path)/spins_configurations_pcutoff_$(twice(pcutoff)/2)_jb_$(twice(jb)/2).jld2" spins_configurations
+        # store partial spins configurations at pctuoff
+        @save "$(configs_path)/configs_pcutoff_$(twice(pcutoff)/2).jld2" spins_configurations
+
+        if (pcutoff > 0)
+            nconf = total_number_spins_configs[end] + size(spins_configurations)[1]
+            push!(total_number_spins_configs, nconf)
+        else
+            push!(total_number_spins_configs, size(spins_configurations)[1])
+        end
 
     end
+
+    # store total spins configurations at total cutoff
+    total_number_spins_configs_df = DataFrame(total_spins_configs=total_number_spins_configs)
+    CSV.write("$(configs_path)/spins_configurations_cutoff_$(twice(cutoff)/2).csv", total_number_spins_configs_df)
 
 end
 
@@ -47,28 +60,35 @@ function self_energy_MC_spins_conf(cutoff, Nmc::Int, jb::HalfInt, configs_path::
     # loop over partial cutoffs
     for pcutoff = 0:step:cutoff
 
-        file_to_load = "$(configs_path)/spins_configurations_pcutoff_$(twice(pcutoff)/2)_jb_$(twice(jb)/2).jld2"
+        file_to_load = "$(configs_path)/configs_pcutoff_$(twice(pcutoff)/2).jld2"
 
         if (!isfile(file_to_load))
-            error("spins configurations for pcutoff $(twice(pcutoff)/2) and jb $(twice(jb)/2) must be computed first\n")
+            error("spins configurations for pcutoff $(twice(pcutoff)/2) must be computed first\n")
         end
 
-        # load list of all spins to compute
-        @load "$(configs_path)/spins_configurations_pcutoff_$(twice(pcutoff)/2)_jb_$(twice(jb)/2).jld2" spins_configurations
+        # load list of partial spins to sample from
+        @load "$(file_to_load)" spins_configurations
 
-        MC_indices_spins_configurations = Array{Int32}(undef, Nmc)
+        if (isempty(spins_configurations))
+            MC_indices_spins_configurations = Array{Int32}(undef, 0)
+            @save "$(MC_configs_path)/indices_pcutoff_$(twice(pcutoff)/2).jld2" MC_indices_spins_configurations
+        else
 
-        total_number_spins_configs = size(spins_configurations)[1]
-        distr = Uniform(1, total_number_spins_configs + 1)
-        draw_float_sample = Array{Float64}(undef, 1)
+            MC_indices_spins_configurations = Array{Int32}(undef, Nmc)
 
-        for n = 1:Nmc
-            rand!(distr, draw_float_sample)
-            MC_indices_spins_configurations[n] = round(Int64, floor(draw_float_sample[1]))
+            number_spins_configs = size(spins_configurations)[1]
+            distr = Uniform(1, number_spins_configs + 1)
+            draw_float_sample = Array{Float64}(undef, 1)
+
+            for n = 1:Nmc
+                rand!(distr, draw_float_sample)
+                MC_indices_spins_configurations[n] = round(Int64, floor(draw_float_sample[1]))
+            end
+
+            # store MC spins indices 
+            @save "$(MC_configs_path)/indices_pcutoff_$(twice(pcutoff)/2).jld2" MC_indices_spins_configurations
+
         end
-
-        # store MC spins indices 
-        @save "$(MC_configs_path)/MC_spins_indices_pcutoff_$(twice(pcutoff)/2)_Nmc_$(Nmc)_jb_$(twice(jb)/2).jld2" MC_indices_spins_configurations
 
     end
 
