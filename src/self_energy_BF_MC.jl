@@ -2,99 +2,76 @@ using Distributed
 
 number_of_workers = nworkers()
 
-printstyled("\nSelf-energy BF divergence parallelized on $(number_of_workers) worker(s)\n\n"; bold=true, color=:blue)
+printstyled("\nSelf-energy BF monte carlo divergence parallelized on $(number_of_workers) worker(s)\n\n"; bold=true, color=:blue)
 
-length(ARGS) < 4 && error("please use these 3 arguments: data_sl2cfoam_next_folder    cutoff    store_folder    M_C_iterations")
+length(ARGS) < 7 && error("use these arguments: DATA_SL2CFOAM_FOLDER    CUTOFF    JB    STORE_FOLDER    MONTE_CARLO_ITERATIONS    COMPUTE_SPINS_CONFIGURATIONS    COMPUTE_MC_INDICES")
+
 @eval @everywhere DATA_SL2CFOAM_FOLDER = $(ARGS[1])
-CUTOFF = parse(Int, ARGS[2])
-@eval STORE_FOLDER = $(ARGS[3])
-MONTE_CARLO_ITERATIONS = parse(Int, ARGS[4])
+@eval STORE_FOLDER = $(ARGS[4])
+MONTE_CARLO_ITERATIONS = parse(Int, ARGS[5])
+COMPUTE_SPINS_CONFIGURATIONS = parse(Bool, ARGS[6])
+COMPUTE_MC_INDICES = parse(Bool, ARGS[7])
 
-printstyled("precompiling packages...\n"; bold=true, color=:cyan)
+printstyled("precompiling packages and source codes...\n"; bold=true, color=:cyan)
 @everywhere begin
     include("../inc/pkgs.jl")
     include("init.jl")
+    include("spins_configurations.jl")
 end
 println("done\n")
 
 CUTOFF_FLOAT = parse(Float64, ARGS[2])
 CUTOFF = HalfInt(CUTOFF_FLOAT)
 
-if (CUTOFF <= 1)
-    error("please provide a larger cutoff")
-end
-
-STORE_FOLDER = "$(STORE_FOLDER)/data_MC/BF/cutoff_$(CUTOFF_FLOAT)/MC_iterations_$(MONTE_CARLO_ITERATIONS)"
-mkpath(STORE_FOLDER)
+JB_FLOAT = parse(Float64, ARGS[3])
+JB = HalfInt(JB_FLOAT)
 
 printstyled("initializing library...\n"; bold=true, color=:cyan)
 @everywhere init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER, 0.123) # fictitious Immirzi 
 println("done\n")
 
+SPINS_CONF_FOLDER = "$(STORE_FOLDER)/data/self_energy/jb_$(JB_FLOAT)/spins_configurations"
+SPINS_MC_INDICES_FOLDER = "$(STORE_FOLDER)/data/self_energy/jb_$(JB_FLOAT)/monte_carlo/Nmc_$(MONTE_CARLO_ITERATIONS)/spins_indices"
 
-function self_energy(cutoff, Nmc, number_of_workers)
+if (COMPUTE_SPINS_CONFIGURATIONS)
+    printstyled("computing spins configurations for jb $(JB) up to cutoff $(CUTOFF)...\n"; bold=true, color=:cyan)
+    mkpath(SPINS_CONF_FOLDER)
+    @time self_energy_spins_conf(CUTOFF, JB, SPINS_CONF_FOLDER)
+    println("done\n")
+end
 
-    # set boundary
-    step = onehalf = half(1)
-    jb = half(1)
+if (COMPUTE_MC_INDICES)
+    printstyled("sampling monte carlo spins indices for Nmc $(MONTE_CARLO_ITERATIONS), jb $(JB) up to cutoff $(CUTOFF)...\n"; bold=true, color=:cyan)
+    mkpath(SPINS_MC_INDICES_FOLDER)
+    @time self_energy_MC_spins_indices(CUTOFF, MONTE_CARLO_ITERATIONS, JB, SPINS_CONF_FOLDER, SPINS_MC_INDICES_FOLDER)
+    println("done\n")
+end
+
+STORE_AMPLS_FOLDER = "$(STORE_FOLDER)/data/self_energy/jb_$(JB_FLOAT)/monte_carlo/Nmc_$(MONTE_CARLO_ITERATIONS)/BF"
+mkpath(STORE_AMPLS_FOLDER)
+
+function self_energy_BF(cutoff, jb::HalfInt, Nmc::Int, spins_conf_folder::String, spins_mc_indices_folder::String, step=half(1))
 
     ampls = Float64[]
     stds = Float64[]
-    nconfs = Int64[]
 
-    # loop over partial cutoffs
     for pcutoff = 0:step:cutoff
 
-        # generate a list of all spins
-        spins_all = NTuple{6,HalfInt}[]
+        @load "$(spins_conf_folder)/configs_pcutoff_$(twice(pcutoff)/2).jld2" spins_configurations
 
-        for j23::HalfInt = 0:onehalf:pcutoff, j24::HalfInt = 0:onehalf:pcutoff, j25::HalfInt = 0:onehalf:pcutoff,
-            j34::HalfInt = 0:onehalf:pcutoff, j35::HalfInt = 0:onehalf:pcutoff, j45::HalfInt = 0:onehalf:pcutoff
-
-            # skip if computed in lower partial cutoff
-            j23 <= (pcutoff - step) && j24 <= (pcutoff - step) &&
-                j25 <= (pcutoff - step) && j34 <= (pcutoff - step) &&
-                j35 <= (pcutoff - step) && j45 <= (pcutoff - step) && continue
-
-            # skip if any intertwiner range empty
-            r2, _ = intertwiner_range(jb, j25, j24, j23)
-            r3, _ = intertwiner_range(j23, jb, j34, j35)
-            r4, _ = intertwiner_range(j34, j24, jb, j45)
-            r5, _ = intertwiner_range(j45, j35, j25, jb)
-
-            isempty(r2) && continue
-            isempty(r3) && continue
-            isempty(r4) && continue
-            isempty(r5) && continue
-
-            # must be computed
-            push!(spins_all, (j23, j24, j25, j34, j35, j45))
-
-        end
-
-        if isempty(spins_all)
+        if isempty(spins_configurations)
             push!(ampls, 0.0)
             push!(stds, 0.0)
-            push!(nconfs, 0)
             continue
         end
 
-        tnconf = size(spins_all)[1]
-
-        distr = Uniform(1, tnconf + 1)
-
-        draw_float_sample = Array{Float64}(undef, 1)
+        @load "$(spins_mc_indices_folder)/indices_pcutoff_$(twice(pcutoff)/2).jld2" MC_indices_spins_configurations
 
         bulk_ampls = SharedArray{Float64}(Nmc)
-        bulk_ampls[:] .= 0
 
         @time @sync @distributed for bulk_ampls_index in eachindex(bulk_ampls)
 
-            rand!(distr, draw_float_sample)
-
-            index_MC = round(Int64, floor(draw_float_sample[1]))
-
-            j23, j24, j25, j34, j35, j45 = spins_all[index_MC]
+            j23, j24, j25, j34, j35, j45 = spins_configurations[MC_indices_spins_configurations[bulk_ampls_index]]
 
             # restricted range of intertwiners
             r2, _ = intertwiner_range(jb, j25, j24, j23)
@@ -106,9 +83,10 @@ function self_energy(cutoff, Nmc, number_of_workers)
             # compute vertex
             v = vertex_BF_compute([jb, jb, jb, jb, j23, j24, j25, j34, j35, j45], rm;)
 
-            # contract
+            # face dims
             dfj = (2j23 + 1) * (2j24 + 1) * (2j25 + 1) * (2j34 + 1) * (2j35 + 1) * (2j45 + 1)
 
+            # contract
             bulk_ampls[bulk_ampls_index] = dfj * dot(v.a, v.a)
 
         end
@@ -116,47 +94,40 @@ function self_energy(cutoff, Nmc, number_of_workers)
         tampl = mean(bulk_ampls)
 
         tampl_var = 0.0
-
         for i = 1:Nmc
             tampl_var += (bulk_ampls[i] - tampl)^2
         end
-
         tampl_var /= (Nmc - 1)
 
         # normalize
-        tampl = tampl * tnconf
+        tnconf = size(spins_configurations)[1]
+        tampl *= tnconf
         tampl_std = sqrt(tampl_var * (tnconf^2) / Nmc)
 
-        ampl = ampls[end] + tampl
-        std = stds[end] + tampl_std
-        nconf = nconfs[end] + tnconf 
+        if isempty(ampls)
+            ampl = tampl
+            std = tampl_std
+        else
+            ampl = ampls[end] + tampl
+            std = stds[end] + tampl_std
+        end
 
         log("Amplitude at partial cutoff = $pcutoff: $(ampl)")
         push!(ampls, ampl)
-        log("Amplitude std at partial cutoff = $pcutoff: $(std)")
+        println("Amplitude std at partial cutoff = $pcutoff: $(std)\n")
         push!(stds, std)
-        log("Bulk spins configs at partial cutoff = $pcutoff: $(nconf)")
-        push!(nconfs, nconf)
 
     end # partial cutoffs loop
 
-    nconfs, ampls, stds
+    ampls, stds
 
 end
 
-printstyled("Pre-compiling the function...\n"; bold=true, color=:cyan)
-@time self_energy(1, 10, 1);
-println("done\n")
-sleep(1)
-
-printstyled("\nStarting computation with K = $(CUTOFF)...\n"; bold=true, color=:cyan)
-@time nconfs, ampls, stds = self_energy(CUTOFF, MONTE_CARLO_ITERATIONS, number_of_workers);
-
-column_labels = ["n_confs", "amp", "std"]
+printstyled("\nStarting computation with Nmc $(MONTE_CARLO_ITERATIONS), jb $(JB) up to cutoff $(CUTOFF)...\n"; bold=true, color=:cyan)
+@time ampls, stds = self_energy_BF(CUTOFF, JB, MONTE_CARLO_ITERATIONS, SPINS_CONF_FOLDER, SPINS_MC_INDICES_FOLDER);
 
 printstyled("\nSaving dataframe...\n"; bold=true, color=:cyan)
-df = DataFrame([nconfs, ampls, stds], column_labels)
-
-CSV.write("$(STORE_FOLDER)/self_energy.csv", df)
+df = DataFrame([ampls, stds], ["amp", "std"])
+CSV.write("$(STORE_AMPLS_FOLDER)/ampls_cutoff_$(CUTOFF)_ib_0.0.csv", df)
 
 printstyled("\nCompleted\n\n"; bold=true, color=:blue)

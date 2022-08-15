@@ -1,7 +1,5 @@
-# compute the self-energy spins configurations for all partial cutoffs up to cutoff
+# compute self-energy spins configurations for all partial cutoffs up to cutoff
 function self_energy_spins_conf(cutoff, jb::HalfInt, configs_path::String, step=half(1))
-
-    onehalf = half(1)
 
     total_number_spins_configs = Int[]
 
@@ -11,8 +9,8 @@ function self_energy_spins_conf(cutoff, jb::HalfInt, configs_path::String, step=
         # generate a list of all spins to compute
         spins_configurations = NTuple{6,HalfInt8}[]
 
-        for j23::HalfInt = 0:onehalf:pcutoff, j24::HalfInt = 0:onehalf:pcutoff, j25::HalfInt = 0:onehalf:pcutoff,
-            j34::HalfInt = 0:onehalf:pcutoff, j35::HalfInt = 0:onehalf:pcutoff, j45::HalfInt = 0:onehalf:pcutoff
+        for j23::HalfInt = 0:step:pcutoff, j24::HalfInt = 0:step:pcutoff, j25::HalfInt = 0:step:pcutoff,
+            j34::HalfInt = 0:step:pcutoff, j35::HalfInt = 0:step:pcutoff, j45::HalfInt = 0:step:pcutoff
 
             # skip if computed in lower partial cutoff
             j23 <= (pcutoff - step) && j24 <= (pcutoff - step) &&
@@ -54,8 +52,8 @@ function self_energy_spins_conf(cutoff, jb::HalfInt, configs_path::String, step=
 end
 
 
-# compute the Monte Carlo self-energy indices for spins configurations for all partial cutoffs up to cutoff
-function self_energy_MC_spins_conf(cutoff, Nmc::Int, jb::HalfInt, configs_path::String, MC_configs_path::String, step=half(1))
+# compute Monte Carlo self-energy indices for all partial cutoffs up to cutoff
+function self_energy_MC_spins_indices(cutoff, Nmc::Int, jb::HalfInt, configs_path::String, MC_configs_path::String, step=half(1))
 
     # loop over partial cutoffs
     for pcutoff = 0:step:cutoff

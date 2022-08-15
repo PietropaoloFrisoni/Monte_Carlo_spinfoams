@@ -16,17 +16,25 @@ $JULIA_EXECUTABLE_PATH   -p   [N-1]    $JULIA_CODE_PATH   $ARGS
 
 where [N-1] is the number of workers. The `ARGS` parameter depends on the specific kind of computation. We show some examples below.
 
-### Example: BF Monte Carlo
+### Example: EPRL Monte Carlo
 
 ```
-ARGS = $CUTOFF    $JB    $STORE_FOLDER    $MONTE_CARLO_ITERATIONS    $COMPUTE_SPINS_CONFIGURATIONS    $COMPUTE_MC_INDICES
+ARGS = DATA_SL2CFOAM_FOLDER    CUTOFF    JB    DL_MIN    DL_MAX     IMMIRZI    STORE_FOLDER    MONTE_CARLO_ITERATIONS    COMPUTE_SPINS_CONFIGURATIONS    COMPUTE_MC_INDICES
 ```
 
 where:
 
+- `DATA_SL2CFOAM_FOLDER`: folder with fastwigxj tables where boosters (and possibly vertices) are stored
+
 - `CUTOFF`: the maximum value of bulks spins
 
 - `JB`: value of boundary spins
+
+- `DL_MIN`: minimum value of Dl truncation parameter
+
+- `DL_MAX`: maximum value of Dl truncation parameter
+
+- `IMMIRZI`: value of Immirzi parameter
 
 - `STORE_FOLDER`: folder where data are saved
 
