@@ -91,3 +91,190 @@ function self_energy_MC_spins_indices(cutoff, Nmc::Int, jb::HalfInt, configs_pat
     end
 
 end
+
+
+function self_energy_MC_sampling_BIASED(cutoff, Nmc::Int, jb::HalfInt, MC_configs_path::String, step=half(1))
+
+    MC_draws = Array{HalfInt8}(undef, 6, Nmc)
+    draw_float_sample = Array{Float64}(undef, 1)
+
+    # loop over partial cutoffs
+    for pcutoff = step:step:cutoff
+
+        distr = Uniform(0, Int(2 * pcutoff + 1))
+
+        for n = 1:Nmc
+
+            while true
+
+                # sampling j23, j24, j25 for the 4j with spins [j23, j24, j25, jb]
+                while true
+                    for i = 1:3
+                        rand!(distr, draw_float_sample)
+                        MC_draws[i, n] = half(floor(draw_float_sample[1]))
+                    end
+                    r, _ = intertwiner_range(
+                        MC_draws[1, n],
+                        MC_draws[2, n],
+                        MC_draws[3, n],
+                        jb
+                    )
+                    isempty(r) || break
+                end
+
+                # sampling j34, j35 for the 4j with spins [j34, j35, jb, j23]
+                while true
+                    for i = 4:5
+                        rand!(distr, draw_float_sample)
+                        MC_draws[i, n] = half(floor(draw_float_sample[1]))
+                    end
+                    r, _ = intertwiner_range(
+                        MC_draws[4, n],
+                        MC_draws[5, n],
+                        jb,
+                        MC_draws[1, n]
+                    )
+                    isempty(r) || break
+                end
+
+                # sampling j45 for the 4j with spins [j45, jb, j24, j34]
+                while true
+                    for i = 6:6
+                        rand!(distr, draw_float_sample)
+                        MC_draws[i, n] = half(floor(draw_float_sample[1]))
+                    end
+                    r, _ = intertwiner_range(
+                        MC_draws[6, n],
+                        jb,
+                        MC_draws[2, n],
+                        MC_draws[4, n]
+                    )
+                    isempty(r) || break
+                end
+
+                # skip if computed in lower partial cutoff
+                MC_draws[1, n] <= (pcutoff - step) && MC_draws[2, n] <= (pcutoff - step) &&
+                    MC_draws[3, n] <= (pcutoff - step) && MC_draws[4, n] <= (pcutoff - step) &&
+                    MC_draws[5, n] <= (pcutoff - step) && MC_draws[6, n] <= (pcutoff - step) && continue
+
+                # check that 4j with spins [jb, j25, j35, j45] satisfies triangular inequalities
+                r, _ = intertwiner_range(
+                    jb,
+                    MC_draws[3, n],
+                    MC_draws[5, n],
+                    MC_draws[6, n],
+                )
+                isempty(r) || break
+
+            end
+
+        end
+
+        # store MC spins indices 
+        @save "$(MC_configs_path)/MC_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_draws
+
+    end
+
+end
+
+
+
+function self_energy_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_configs_path::String, step=half(1))
+
+    MC_draws = Array{HalfInt8}(undef, 6, Nmc)
+    draw_float_sample = Array{Float64}(undef, 1)
+
+    # loop over partial cutoffs
+    for pcutoff = step:step:cutoff
+
+        distr = Uniform(0, Int(2 * pcutoff + 1))
+
+        for n = 1:Nmc
+
+            while true
+
+                test = true
+
+                # sampling j23, j24, j25 for the 4j with spins [j23, j24, j25, jb]
+                for i = 1:3
+                    rand!(distr, draw_float_sample)
+                    MC_draws[i, n] = half(floor(draw_float_sample[1]))
+                end
+
+                # sampling j34, j35 for the 4j with spins [j34, j35, jb, j23]
+                for i = 4:5
+                    rand!(distr, draw_float_sample)
+                    MC_draws[i, n] = half(floor(draw_float_sample[1]))
+                end
+
+                # sampling j45 for the 4j with spins [j45, jb, j24, j34]
+                for i = 6:6
+                    rand!(distr, draw_float_sample)
+                    MC_draws[i, n] = half(floor(draw_float_sample[1]))
+                end
+
+                # skip if computed in lower partial cutoff
+                if (MC_draws[1, n] <= (pcutoff - step) && MC_draws[2, n] <= (pcutoff - step) &&
+                    MC_draws[3, n] <= (pcutoff - step) && MC_draws[4, n] <= (pcutoff - step) &&
+                    MC_draws[5, n] <= (pcutoff - step) && MC_draws[6, n] <= (pcutoff - step))
+                    test = false
+                end
+
+                # check that 4j with spins [j45, jb, j24, j34] satisfies triangular inequalities
+                r, _ = intertwiner_range(
+                    MC_draws[6, n],
+                    jb,
+                    MC_draws[2, n],
+                    MC_draws[4, n]
+                )
+                if (isempty(r))
+                    test = false
+                end
+
+                # check that 4j with spins [j34, j35, jb, j23] satisfies triangular inequalities
+                r, _ = intertwiner_range(
+                    MC_draws[4, n],
+                    MC_draws[5, n],
+                    jb,
+                    MC_draws[1, n]
+                )
+                if (isempty(r))
+                    test = false
+                end
+
+                # check that 4j with spins [j23, j24, j25, jb] satisfies triangular inequalities
+                r, _ = intertwiner_range(
+                    MC_draws[1, n],
+                    MC_draws[2, n],
+                    MC_draws[3, n],
+                    jb
+                )
+                if (isempty(r))
+                    test = false
+                end
+
+                # check that 4j with spins [jb, j25, j35, j45] satisfies triangular inequalities
+                r, _ = intertwiner_range(
+                    jb,
+                    MC_draws[3, n],
+                    MC_draws[5, n],
+                    MC_draws[6, n],
+                )
+                if (isempty(r))
+                    test = false
+                end
+
+                if (test == true)
+                    break
+                end
+
+            end
+
+        end
+
+        # store MC spins indices 
+        @save "$(MC_configs_path)/MC_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_draws
+
+    end
+
+end
