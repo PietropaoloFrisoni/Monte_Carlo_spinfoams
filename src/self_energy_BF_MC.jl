@@ -2,7 +2,7 @@ using Distributed
 
 number_of_workers = nworkers()
 
-printstyled("\nSelf-energy BF monte carlo divergence parallelized on $(number_of_workers) worker(s)\n\n"; bold=true, color=:blue)
+printstyled("\nSelf energy BF monte carlo divergence parallelized on $(number_of_workers) worker(s)\n\n"; bold=true, color=:blue)
 
 length(ARGS) < 7 && error("use these arguments: DATA_SL2CFOAM_FOLDER    CUTOFF    JB    STORE_FOLDER    MONTE_CARLO_ITERATIONS    COMPUTE_SPINS_CONFIGURATIONS    COMPUTE_MC_INDICES")
 

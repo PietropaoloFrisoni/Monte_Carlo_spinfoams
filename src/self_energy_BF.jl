@@ -2,7 +2,7 @@ using Distributed
 
 number_of_workers = nworkers()
 
-printstyled("\nSelf-energy BF divergence parallelized on $(number_of_workers) worker(s)\n\n"; bold=true, color=:blue)
+printstyled("\nSelf energy BF divergence parallelized on $(number_of_workers) worker(s)\n\n"; bold=true, color=:blue)
 
 length(ARGS) < 5 && error("use these arguments: DATA_SL2CFOAM_FOLDER    CUTOFF    JB    STORE_FOLDER    COMPUTE_SPINS_CONFIGURATIONS")
 @eval @everywhere DATA_SL2CFOAM_FOLDER = $(ARGS[1])
@@ -30,7 +30,7 @@ println("done\n")
 SPINS_CONF_FOLDER = "$(STORE_FOLDER)/data/self_energy/jb_$(JB_FLOAT)/spins_configurations"
 
 if (COMPUTE_SPINS_CONFIGURATIONS)
-    printstyled("computing spins configurations for jb $(JB) up to cutoff $(CUTOFF)...\n"; bold=true, color=:cyan)
+    printstyled("computing spins configurations for jb $(JB) up to cutoff $(CUTOFF)...\n\n"; bold=true, color=:cyan)
     mkpath(SPINS_CONF_FOLDER)
     @time self_energy_spins_conf(CUTOFF, JB, SPINS_CONF_FOLDER)
     println("done\n")
