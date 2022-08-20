@@ -15,7 +15,7 @@ using WignerSymbols
 # useful command to install all required pkgs in a single loop
 
 #=
-vec = ["IJulia", "Distributions", "Random", "HalfIntegers", "WignerSymbols", "LoopVectorization", "SharedArrays", "JLD2", "LinearAlgebra", "Distributed", "ElasticArrays", "CSV", "DataFrames", "Dates"]
+vec = ["Distributions", "Random", "HalfIntegers", "WignerSymbols", "LoopVectorization", "SharedArrays", "JLD2", "LinearAlgebra", "Distributed", "ElasticArrays", "CSV", "DataFrames", "Dates"]
 import Pkg
 for p in vec
 Pkg.add("$p")
