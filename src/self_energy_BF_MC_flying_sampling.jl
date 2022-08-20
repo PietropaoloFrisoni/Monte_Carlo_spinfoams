@@ -42,7 +42,7 @@ end
 STORE_AMPLS_FOLDER = "$(STORE_FOLDER)/data/self_energy/jb_$(JB_FLOAT)/monte_carlo/Nmc_$(MONTE_CARLO_ITERATIONS)/BF"
 mkpath(STORE_AMPLS_FOLDER)
 
-function self_energy_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spins_configurations, spins_mc_indices_folder::String, step=half(1))
+function self_energy_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spins_configurations, spins_mc_folder::String, step=half(1))
 
     ampls = Float64[]
     stds = Float64[]
@@ -53,7 +53,7 @@ function self_energy_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spins_configur
 
     for pcutoff = step:step:cutoff
 
-        @load "$(spins_mc_indices_folder)/MC_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_draws
+        @load "$(spins_mc_folder)/MC_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_draws
 
         bulk_ampls = SharedArray{Float64}(Nmc)
 

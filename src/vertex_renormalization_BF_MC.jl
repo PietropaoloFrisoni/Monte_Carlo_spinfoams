@@ -50,9 +50,68 @@ end
 STORE_AMPLS_FOLDER = "$(STORE_FOLDER)/data/vertex_renormalization/jb_$(JB_FLOAT)/monte_carlo/Nmc_$(MONTE_CARLO_ITERATIONS)/BF"
 mkpath(STORE_AMPLS_FOLDER)
 
-function vertex_renormalization_BF()
+function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spins_configurations, spins_mc_folder::String, step=half(1))
 
-    # TODO write
+    ampls = Float64[]
+    stds = Float64[]
+
+    # case pcutoff = 0
+    push!(ampls, 0.0)
+    push!(stds, 0.0)
+
+    for pcutoff = step:step:cutoff
+
+        @load "$(spins_mc_folder)/MC_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_draws
+
+        bulk_ampls = SharedArray{Float64}(Nmc)
+
+        @time @sync @distributed for bulk_ampls_index in eachindex(bulk_ampls)
+
+            jpink = MC_draws[1, bulk_ampls_index]
+            jblue = MC_draws[2, bulk_ampls_index]
+            jbrightgreen = MC_draws[3, bulk_ampls_index]
+            jbrown = MC_draws[4, bulk_ampls_index]
+            jdarkgreen = MC_draws[5, bulk_ampls_index]
+            jviolet = MC_draws[6, bulk_ampls_index]
+            jpurple = MC_draws[7, bulk_ampls_index]
+            jred = MC_draws[8, bulk_ampls_index]
+            jorange = MC_draws[9, bulk_ampls_index]
+            jgrassgreen = MC_draws[10, bulk_ampls_index]
+
+            
+
+        end
+
+        tampl = mean(bulk_ampls)
+
+        tampl_var = 0.0
+        for i = 1:Nmc
+            tampl_var += (bulk_ampls[i] - tampl)^2
+        end
+        tampl_var /= (Nmc - 1)
+
+        # normalize
+        index_cutoff = Int(2 * pcutoff + 1)
+        tnconf = vec_number_spins_configurations[index_cutoff] - vec_number_spins_configurations[index_cutoff-1]
+        tampl *= tnconf
+        tampl_std = sqrt(tampl_var * (tnconf^2) / Nmc)
+
+        if isempty(ampls)
+            ampl = tampl
+            std = tampl_std
+        else
+            ampl = ampls[end] + tampl
+            std = stds[end] + tampl_std
+        end
+
+        log("Amplitude at partial cutoff = $pcutoff: $(ampl)")
+        push!(ampls, ampl)
+        println("Amplitude std at partial cutoff = $pcutoff: $(std)\n")
+        push!(stds, std)
+
+    end # partial cutoffs loop
+
+    ampls, stds
 
 end
 
@@ -67,8 +126,7 @@ vec_number_spins_configurations = vec(
     ),
 )
 
-
 printstyled("\nStarting computation with Nmc=$(MONTE_CARLO_ITERATIONS), jb=$(JB) up to K=$(CUTOFF)...\n"; bold=true, color=:cyan)
-#@time ampls, stds = TODO:write
+@time ampls, stds = vertex_renormalization_BF(CUTOFF, JB, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_FOLDER);
 
 printstyled("\nCompleted\n\n"; bold=true, color=:blue)
