@@ -48,6 +48,13 @@ COMPUTE_MC_SPINS=true
 
 BOOSTER_DIR=${BASE_DIR}
 
+
+
+echo "Copying fastwig tables to: $SLURM_TMPDIR ..."
+echo
+
+cp ${FASTWIG_TABLES_PATH}/* $SLURM_TMPDIR/
+
 # booster extraction
 
 #echo "Extracting previous boosters to: $SLURM_TMPDIR ..."
