@@ -33,7 +33,7 @@ SPINS_CONF_FOLDER = "$(STORE_FOLDER)/data/self_energy/jb_$(JB_FLOAT)/spins_confi
 SPINS_MC_INDICES_FOLDER = "$(STORE_FOLDER)/data/self_energy/jb_$(JB_FLOAT)/monte_carlo/Nmc_$(MONTE_CARLO_ITERATIONS)/spins_indices"
 
 if (COMPUTE_MC_INDICES)
-    printstyled("sampling monte carlo spins for Nmc $(MONTE_CARLO_ITERATIONS), jb $(JB) up to cutoff $(CUTOFF)...\n"; bold=true, color=:cyan)
+    printstyled("sampling monte carlo spins for Nmc=$(MONTE_CARLO_ITERATIONS), jb=$(JB) up to K=$(CUTOFF)...\n"; bold=true, color=:cyan)
     mkpath(SPINS_MC_INDICES_FOLDER)
     @time self_energy_MC_sampling(CUTOFF, MONTE_CARLO_ITERATIONS, JB, SPINS_MC_INDICES_FOLDER)
     println("done\n")
@@ -117,7 +117,7 @@ function self_energy_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spins_configur
 
 end
 
-printstyled("\nLoading CSV file with number of spins configurations for jb $(JB) up to cutoff $(CUTOFF)...\n"; bold=true, color=:cyan)
+printstyled("\nLoading CSV file with number of spins configurations for jb=$(JB) up to K=$(CUTOFF)...\n"; bold=true, color=:cyan)
 vec_number_spins_configurations = vec(
     Matrix(
         DataFrame(
@@ -128,7 +128,7 @@ vec_number_spins_configurations = vec(
     ),
 )
 
-printstyled("\nStarting computation with Nmc $(MONTE_CARLO_ITERATIONS), jb $(JB) up to cutoff $(CUTOFF)...\n"; bold=true, color=:cyan)
+printstyled("\nStarting computation with Nmc=$(MONTE_CARLO_ITERATIONS), jb=$(JB) up to K=$(CUTOFF)...\n"; bold=true, color=:cyan)
 @time ampls, stds = self_energy_BF(CUTOFF, JB, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_INDICES_FOLDER);
 
 printstyled("\nSaving dataframe...\n"; bold=true, color=:cyan)

@@ -114,8 +114,6 @@ function self_energy_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_configs_path:
 
             while true
 
-                test = true
-
                 # sampling j23, j24, j25 for the 4j with spins [j23, j24, j25, jb]
                 for i = 1:3
                     rand!(distr, draw_float_sample)
@@ -135,11 +133,9 @@ function self_energy_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_configs_path:
                 end
 
                 # skip if computed in lower partial cutoff
-                if (MC_draws[1, n] <= (pcutoff - step) && MC_draws[2, n] <= (pcutoff - step) &&
+                MC_draws[1, n] <= (pcutoff - step) && MC_draws[2, n] <= (pcutoff - step) &&
                     MC_draws[3, n] <= (pcutoff - step) && MC_draws[4, n] <= (pcutoff - step) &&
-                    MC_draws[5, n] <= (pcutoff - step) && MC_draws[6, n] <= (pcutoff - step))
-                    test = false
-                end
+                    MC_draws[5, n] <= (pcutoff - step) && MC_draws[6, n] <= (pcutoff - step) && continue
 
                 # check that 4j with spins [j45, jb, j24, j34] satisfies triangular inequalities
                 r, _ = intertwiner_range(
@@ -148,9 +144,7 @@ function self_energy_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_configs_path:
                     MC_draws[2, n],
                     MC_draws[4, n]
                 )
-                if (isempty(r))
-                    test = false
-                end
+                isempty(r) && continue
 
                 # check that 4j with spins [j34, j35, jb, j23] satisfies triangular inequalities
                 r, _ = intertwiner_range(
@@ -159,9 +153,7 @@ function self_energy_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_configs_path:
                     jb,
                     MC_draws[1, n]
                 )
-                if (isempty(r))
-                    test = false
-                end
+                isempty(r) && continue
 
                 # check that 4j with spins [j23, j24, j25, jb] satisfies triangular inequalities
                 r, _ = intertwiner_range(
@@ -170,9 +162,7 @@ function self_energy_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_configs_path:
                     MC_draws[3, n],
                     jb
                 )
-                if (isempty(r))
-                    test = false
-                end
+                isempty(r) && continue
 
                 # check that 4j with spins [jb, j25, j35, j45] satisfies triangular inequalities
                 r, _ = intertwiner_range(
@@ -181,13 +171,10 @@ function self_energy_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_configs_path:
                     MC_draws[5, n],
                     MC_draws[6, n],
                 )
-                if (isempty(r))
-                    test = false
-                end
+                isempty(r) && continue
 
-                if (test == true)
-                    break
-                end
+                # bulk spins have passed all tests -> must be computed
+                break
 
             end
 
@@ -303,8 +290,6 @@ function vertex_renormalization_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_co
 
             while true
 
-                test = true
-
                 # sampling jpink, jblue, jbrightgreen
                 for i = 1:3
                     rand!(distr, draw_float_sample)
@@ -336,13 +321,11 @@ function vertex_renormalization_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_co
                 end
 
                 # skip if computed in lower partial cutoff
-                if (MC_draws[1, n] <= (pcutoff - step) && MC_draws[2, n] <= (pcutoff - step) &&
+                MC_draws[1, n] <= (pcutoff - step) && MC_draws[2, n] <= (pcutoff - step) &&
                     MC_draws[3, n] <= (pcutoff - step) && MC_draws[4, n] <= (pcutoff - step) &&
                     MC_draws[5, n] <= (pcutoff - step) && MC_draws[6, n] <= (pcutoff - step) &&
                     MC_draws[7, n] <= (pcutoff - step) && MC_draws[8, n] <= (pcutoff - step) &&
-                    MC_draws[9, n] <= (pcutoff - step) && MC_draws[10, n] <= (pcutoff - step))
-                    test = false
-                end
+                    MC_draws[9, n] <= (pcutoff - step) && MC_draws[10, n] <= (pcutoff - step) && continue
 
                 # AB check
                 r, _ = intertwiner_range(
@@ -351,9 +334,7 @@ function vertex_renormalization_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_co
                     MC_draws[3, n],
                     jb,
                 )
-                if (isempty(r))
-                    test = false
-                end
+                isempty(r) && continue
 
                 # AE check
                 r, _ = intertwiner_range(
@@ -362,9 +343,7 @@ function vertex_renormalization_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_co
                     MC_draws[1, n],
                     jb
                 )
-                if (isempty(r))
-                    test = false
-                end
+                isempty(r) && continue
 
                 # bottom check
                 r, _ = intertwiner_range(
@@ -373,9 +352,7 @@ function vertex_renormalization_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_co
                     MC_draws[4, n],
                     jb
                 )
-                if (isempty(r))
-                    test = false
-                end
+                isempty(r) && continue
 
                 # CD check
                 r, _ = intertwiner_range(
@@ -384,9 +361,7 @@ function vertex_renormalization_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_co
                     MC_draws[6, n],
                     jb
                 )
-                if (isempty(r))
-                    test = false
-                end
+                isempty(r) && continue
 
                 # BC check
                 r, _ = intertwiner_range(
@@ -395,9 +370,7 @@ function vertex_renormalization_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_co
                     MC_draws[8, n],
                     jb
                 )
-                if (isempty(r))
-                    test = false
-                end
+                isempty(r) && continue
 
                 # inner check up
                 r, _ = intertwiner_range(
@@ -406,9 +379,7 @@ function vertex_renormalization_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_co
                     jb,
                     MC_draws[3, n]
                 )
-                if (isempty(r))
-                    test = false
-                end
+                isempty(r) && continue
 
                 # inner check up-left
                 r, _ = intertwiner_range(
@@ -417,9 +388,7 @@ function vertex_renormalization_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_co
                     jb,
                     MC_draws[1, n]
                 )
-                if (isempty(r))
-                    test = false
-                end
+                isempty(r) && continue
 
                 # inner check bottom-left
                 r, _ = intertwiner_range(
@@ -428,9 +397,7 @@ function vertex_renormalization_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_co
                     jb,
                     MC_draws[4, n]
                 )
-                if (isempty(r))
-                    test = false
-                end
+                isempty(r) && continue
 
                 # inner check bottom-right
                 r, _ = intertwiner_range(
@@ -439,9 +406,7 @@ function vertex_renormalization_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_co
                     jb,
                     MC_draws[6, n]
                 )
-                if (isempty(r))
-                    test = false
-                end
+                isempty(r) && continue
 
                 # inner check up-right
                 r, _ = intertwiner_range(
@@ -450,13 +415,10 @@ function vertex_renormalization_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_co
                     jb,
                     MC_draws[8, n]
                 )
-                if (isempty(r))
-                    test = false
-                end
+                isempty(r) && continue
 
-                if (test == true)
-                    break
-                end
+                # bulk spins have passed all tests -> must be computed
+                break
 
             end
 
