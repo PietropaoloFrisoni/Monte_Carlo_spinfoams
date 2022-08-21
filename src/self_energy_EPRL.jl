@@ -47,7 +47,7 @@ function self_energy_EPRL(cutoff, jb::HalfInt, Dl::Int, spins_conf_folder::Strin
 
     ampls = Float64[]
 
-    result_return = (ret=true, store=false, store_batches=false)
+    result_return = (ret=true, store=true, store_batches=false)
 
     for pcutoff = 0:step:cutoff
 
@@ -95,7 +95,7 @@ function self_energy_EPRL(cutoff, jb::HalfInt, Dl::Int, spins_conf_folder::Strin
 
 end
 
-printstyled("\nStarting computation with jb $(JB), Dl_min = $(DL_MIN), Dl_max = $(DL_MAX), Immirzi = $(IMMIRZI) up to cutoff $(CUTOFF)...\n"; bold=true, color=:cyan)
+printstyled("\nStarting computation with jb=$(JB), Dl_min=$(DL_MIN), Dl_max=$(DL_MAX), Immirzi=$(IMMIRZI) up to K=$(CUTOFF)...\n"; bold=true, color=:cyan)
 
 for Dl = DL_MIN:DL_MAX
 

@@ -279,6 +279,9 @@ end
 function vertex_renormalization_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_configs_path::String, step=half(1))
 
     MC_draws = Array{HalfInt8}(undef, 10, Nmc)
+    MC_right_intertwiners_draws = Array{Tuple{Tuple{HalfInt8,HalfInt8},Int8}}(undef, 5, Nmc)
+    MC_left_intertwiners_draws = Array{Tuple{Tuple{HalfInt8,HalfInt8},Int8}}(undef, 5, Nmc)
+    MC_inner_intertwiners_draws = Array{Tuple{Tuple{HalfInt8,HalfInt8},Int8}}(undef, 5, Nmc)
     draw_float_sample = Array{Float64}(undef, 1)
 
     # loop over partial cutoffs
@@ -327,105 +330,177 @@ function vertex_renormalization_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_co
                     MC_draws[7, n] <= (pcutoff - step) && MC_draws[8, n] <= (pcutoff - step) &&
                     MC_draws[9, n] <= (pcutoff - step) && MC_draws[10, n] <= (pcutoff - step) && continue
 
-                # AB check
-                r, _ = intertwiner_range(
+                # we check triangular inequalities computing the range of right intertwiners,
+                # as we want to avoid zeros and left and right intertwiners have same dimension
+
+                # AB right check
+                rABr = intertwiner_range(
                     MC_draws[1, n],
                     MC_draws[2, n],
                     MC_draws[3, n],
                     jb,
                 )
-                isempty(r) && continue
+                (rABr[2] == 0) && continue
 
-                # AE check
-                r, _ = intertwiner_range(
+                # AE right check
+                rAEr = intertwiner_range(
                     MC_draws[4, n],
                     MC_draws[5, n],
                     MC_draws[1, n],
                     jb
                 )
-                isempty(r) && continue
+                (rAEr[2] == 0) && continue
 
-                # bottom check
-                r, _ = intertwiner_range(
+                # bottom right check
+                rbr = intertwiner_range(
                     MC_draws[6, n],
                     MC_draws[7, n],
                     MC_draws[4, n],
                     jb
                 )
-                isempty(r) && continue
+                (rbr[2] == 0) && continue
 
-                # CD check
-                r, _ = intertwiner_range(
+                # CD right check
+                rCDr = intertwiner_range(
                     MC_draws[8, n],
                     MC_draws[9, n],
                     MC_draws[6, n],
                     jb
                 )
-                isempty(r) && continue
+                (rCDr[2] == 0) && continue
 
-                # BC check
-                r, _ = intertwiner_range(
+                # BC right check
+                rBCr = intertwiner_range(
                     MC_draws[3, n],
                     MC_draws[10, n],
                     MC_draws[8, n],
                     jb
                 )
-                isempty(r) && continue
+                (rBCr[2] == 0) && continue
 
                 # inner check up
-                r, _ = intertwiner_range(
+                rIu = intertwiner_range(
                     MC_draws[9, n],
                     MC_draws[5, n],
                     jb,
                     MC_draws[3, n]
                 )
-                isempty(r) && continue
+                (rIu[2] == 0) && continue
 
                 # inner check up-left
-                r, _ = intertwiner_range(
+                rIul = intertwiner_range(
                     MC_draws[10, n],
                     MC_draws[7, n],
                     jb,
                     MC_draws[1, n]
                 )
-                isempty(r) && continue
+                (rIul[2] == 0) && continue
 
                 # inner check bottom-left
-                r, _ = intertwiner_range(
+                rIbl = intertwiner_range(
                     MC_draws[2, n],
                     MC_draws[9, n],
                     jb,
                     MC_draws[4, n]
                 )
-                isempty(r) && continue
+                (rIbl[2] == 0) && continue
 
                 # inner check bottom-right
-                r, _ = intertwiner_range(
+                rIbr = intertwiner_range(
                     MC_draws[5, n],
                     MC_draws[10, n],
                     jb,
                     MC_draws[6, n]
                 )
-                isempty(r) && continue
+                (rIbr[2] == 0) && continue
 
                 # inner check up-right
-                r, _ = intertwiner_range(
+                rIur = intertwiner_range(
                     MC_draws[7, n],
                     MC_draws[2, n],
                     jb,
                     MC_draws[8, n]
                 )
-                isempty(r) && continue
+                (rIur[2] == 0) && continue
 
                 # bulk spins have passed all tests -> must be computed
+
+                # now we compute also the range of left intertwiners,
+                # as these will be required during the contraction phase
+
+                # AB left
+                rABl = intertwiner_range(
+                    MC_draws[3, n],
+                    MC_draws[2, n],
+                    MC_draws[1, n],
+                    jb,
+                )
+
+                # AE left
+                rAEl = intertwiner_range(
+                    MC_draws[1, n],
+                    MC_draws[5, n],
+                    MC_draws[4, n],
+                    jb
+                )
+
+                # bottom left
+                rbl = intertwiner_range(
+                    MC_draws[4, n],
+                    MC_draws[7, n],
+                    MC_draws[6, n],
+                    jb
+                )
+
+                # CD left
+                rCDl = intertwiner_range(
+                    MC_draws[6, n],
+                    MC_draws[9, n],
+                    MC_draws[8, n],
+                    jb
+                )
+
+                # BC left
+                rBCl = intertwiner_range(
+                    MC_draws[8, n],
+                    MC_draws[10, n],
+                    MC_draws[3, n],
+                    jb
+                )
+
+                MC_right_intertwiners_draws[1, n] = rABr
+                MC_right_intertwiners_draws[2, n] = rAEr
+                MC_right_intertwiners_draws[3, n] = rbr
+                MC_right_intertwiners_draws[4, n] = rCDr
+                MC_right_intertwiners_draws[5, n] = rBCr
+
+                MC_left_intertwiners_draws[1, n] = rABl
+                MC_left_intertwiners_draws[2, n] = rAEl
+                MC_left_intertwiners_draws[3, n] = rbl
+                MC_left_intertwiners_draws[4, n] = rCDl
+                MC_left_intertwiners_draws[5, n] = rBCl
+
+                MC_inner_intertwiners_draws[1, n] = rIu
+                MC_inner_intertwiners_draws[2, n] = rIul
+                MC_inner_intertwiners_draws[3, n] = rIbl
+                MC_inner_intertwiners_draws[4, n] = rIbr
+                MC_inner_intertwiners_draws[5, n] = rIur
+
                 break
 
             end
 
         end
 
-        # store MC spins indices 
+        # store MC bulk spins 
         @save "$(MC_configs_path)/MC_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_draws
+
+        # store MC intertwiners
+        @save "$(MC_configs_path)/MC_right_intertwiners_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_right_intertwiners_draws
+        @save "$(MC_configs_path)/MC_left_intertwiners_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_left_intertwiners_draws
+        @save "$(MC_configs_path)/MC_inner_intertwiners_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_inner_intertwiners_draws
+
+
 
     end
 

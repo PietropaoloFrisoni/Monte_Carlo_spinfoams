@@ -61,7 +61,13 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
 
     for pcutoff = step:step:cutoff
 
+        # load MC bulk spins 
         @load "$(spins_mc_folder)/MC_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_draws
+
+        # load MC intertwiners
+        @load "$(spins_mc_folder)/MC_right_intertwiners_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_right_intertwiners_draws
+        @load "$(spins_mc_folder)/MC_left_intertwiners_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_left_intertwiners_draws
+        @load "$(spins_mc_folder)/MC_inner_intertwiners_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_inner_intertwiners_draws
 
         bulk_ampls = SharedArray{Float64}(Nmc)
 
@@ -78,8 +84,148 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
             jorange = MC_draws[9, bulk_ampls_index]
             jgrassgreen = MC_draws[10, bulk_ampls_index]
 
-            
+            rABr = MC_right_intertwiners_draws[1, bulk_ampls_index]
+            rAEr = MC_right_intertwiners_draws[2, bulk_ampls_index]
+            rbr = MC_right_intertwiners_draws[3, bulk_ampls_index]
+            rCDr = MC_right_intertwiners_draws[4, bulk_ampls_index]
+            rBCr = MC_right_intertwiners_draws[5, bulk_ampls_index]
 
+            rABl = MC_left_intertwiners_draws[1, bulk_ampls_index]
+            rAEl = MC_left_intertwiners_draws[2, bulk_ampls_index]
+            rbl = MC_left_intertwiners_draws[3, bulk_ampls_index]
+            rCDl = MC_left_intertwiners_draws[4, bulk_ampls_index]
+            rBCl = MC_left_intertwiners_draws[5, bulk_ampls_index]
+
+            rIu = MC_inner_intertwiners_draws[1, bulk_ampls_index]
+            rIul = MC_inner_intertwiners_draws[2, bulk_ampls_index]
+            rIbl = MC_inner_intertwiners_draws[3, bulk_ampls_index]
+            rIbr = MC_inner_intertwiners_draws[4, bulk_ampls_index]
+            rIur = MC_inner_intertwiners_draws[5, bulk_ampls_index]
+
+            #= 
+            Paranoid check (passed)
+
+            AB right
+            rABr = intertwiner_range(
+                jpink,
+                jblue,
+                jbrightgreen,
+                jb,
+            )
+
+            if (rABr != MC_right_intertwiners_draws[1, bulk_ampls_index])
+                println("OPS")
+            end
+
+            # AB left
+            rABl = intertwiner_range(
+                jbrightgreen,
+                jblue,
+                jpink,
+                jb,
+            )
+
+            if (rABl != MC_left_intertwiners_draws[1, bulk_ampls_index])
+                println("OPS")
+            end
+
+            # AE right
+            rAEr = intertwiner_range(
+                jbrown,
+                jdarkgreen,
+                jpink,
+                jb
+            )
+
+            if (rAEr != MC_right_intertwiners_draws[2, bulk_ampls_index])
+                println("OPS")
+            end
+
+            # AE left
+            rAEl = intertwiner_range(
+                jpink,
+                jdarkgreen,
+                jbrown,
+                jb
+            )
+
+            if (rAEl != MC_left_intertwiners_draws[2, bulk_ampls_index])
+                println("OPS")
+            end
+
+            # bottom right
+            rbr = intertwiner_range(
+                jviolet,
+                jpurple,
+                jbrown,
+                jb
+            )
+
+            if (rbr != MC_right_intertwiners_draws[3, bulk_ampls_index])
+                println("OPS")
+            end
+
+            # bottom left
+            rbl = intertwiner_range(
+                jbrown,
+                jpurple,
+                jviolet,
+                jb
+            )
+
+            if (rbl != MC_left_intertwiners_draws[3, bulk_ampls_index])
+                println("OPS")
+            end
+
+            # CD right
+            rCDr = intertwiner_range(
+                jred,
+                jorange,
+                jviolet,
+                jb
+            )
+
+            if (rCDr != MC_right_intertwiners_draws[4, bulk_ampls_index])
+                println("OPS")
+            end
+
+            # CD left
+            rCDl = intertwiner_range(
+                jviolet,
+                jorange,
+                jred,
+                jb
+            )
+
+            if (rCDl != MC_left_intertwiners_draws[4, bulk_ampls_index])
+                println("OPS")
+            end
+
+            # BC right
+            rBCr = intertwiner_range(
+                jbrightgreen,
+                jgrassgreen,
+                jred,
+                jb
+            )
+
+            if (rBCr != MC_right_intertwiners_draws[5, bulk_ampls_index])
+                println("OPS")
+            end
+
+            # BC left
+            rBCl = intertwiner_range(
+                jred,
+                jgrassgreen,
+                jbrightgreen,
+                jb
+            )
+
+            if (rBCl != MC_left_intertwiners_draws[5, bulk_ampls_index])
+                println("OPS")
+            end
+
+            =#
         end
 
         tampl = mean(bulk_ampls)
