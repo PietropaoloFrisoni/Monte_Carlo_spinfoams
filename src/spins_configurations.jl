@@ -279,9 +279,11 @@ end
 function vertex_renormalization_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_configs_path::String, step=half(1))
 
     MC_draws = Array{HalfInt8}(undef, 10, Nmc)
+
     MC_right_intertwiners_draws = Array{Tuple{Tuple{HalfInt8,HalfInt8},Int8}}(undef, 5, Nmc)
     MC_left_intertwiners_draws = Array{Tuple{Tuple{HalfInt8,HalfInt8},Int8}}(undef, 5, Nmc)
     MC_inner_intertwiners_draws = Array{Tuple{Tuple{HalfInt8,HalfInt8},Int8}}(undef, 5, Nmc)
+    
     draw_float_sample = Array{Float64}(undef, 1)
 
     # loop over partial cutoffs

@@ -102,6 +102,42 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
             rIbr = MC_inner_intertwiners_draws[4, bulk_ampls_index]
             rIur = MC_inner_intertwiners_draws[5, bulk_ampls_index]
 
+            # compute vertex up
+            r_u = ((0, 0), rABr[1], rIul[1], rIur[1], rBCl[1])
+            v_u = vertex_BF_compute([jb, jb, jb, jb, jpink, jblue, jbrightgreen, jpurple, jgrassgreen, jred], r_u;)
+
+            # compute vertex left
+            r_l = ((0, 0), rAEr[1], rIbl[1], rIu[1], rABl[1])
+            v_l = vertex_BF_compute([jb, jb, jb, jb, jbrown, jdarkgreen, jpink, jorange, jblue, jbrightgreen], r_l;)
+
+            # compute vertex bottom-left
+            r_bl = ((0, 0), rbr[1], rIbr[1], rIul[1], rAEl[1])
+            v_bl = vertex_BF_compute([jb, jb, jb, jb, jviolet, jpurple, jbrown, jgrassgreen, jdarkgreen, jpink], r_bl;)
+
+            # compute vertex bottom-right
+            r_br = ((0, 0), rCDr[1], rIur[1], rIbl[1], rbl[1])
+            v_br = vertex_BF_compute([jb, jb, jb, jb, jred, jorange, jviolet, jblue, jpurple, jbrown], r_br;)
+
+            # compute vertex right
+            r_r = ((0, 0), rBCr[1], rIu[1], rIbr[1], rCDl[1])
+            v_r = vertex_BF_compute([jb, jb, jb, jb, jbrightgreen, jgrassgreen, jred, jdarkgreen, jorange, jviolet], r_r;)
+
+
+            # outer "left" and "right" have same dimension  
+            # TODO: improve efficiency of contraction (@turbo and @simd don't work with this synthax)
+
+            for rABl_index in 1:rABl[2], rAEl_index in 1:rAEl[2], rbl_index in 1:rbl[2], rCDl_index in 1:rCDl[2], rBCl_index in 1:rBCl[2],
+                rIu_index in 1:rIu[2], rIul_index in 1:rIul[2], rIbl_index in 1:rIbl[2], rIbr_index in 1:rIbr[2], rIur_index in 1:rIur[2]
+
+                bulk_ampls[bulk_ampls_index] +=
+                    v_u.a[rBCl_index, rIur_index, rIul_index, rABl_index, 1] *
+                    v_l.a[rABl_index, rIu_index, rIbl_index, rAEl_index, 1] *
+                    v_bl.a[rAEl_index, rIul_index, rIbr_index, rbl_index, 1] *
+                    v_br.a[rbl_index, rIbl_index, rIur_index, rCDl_index, 1] *
+                    v_r.a[rCDl_index, rIbr_index, rIu_index, rBCl_index, 1]
+
+            end
+
             #= 
             Paranoid check (passed)
 
