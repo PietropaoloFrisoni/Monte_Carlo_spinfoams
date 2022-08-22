@@ -4,7 +4,7 @@
 #SBATCH --ntasks-per-node=40
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=0
-#SBATCH --time=0-00:40:00
+#SBATCH --time=7-00:00:00
 #SBATCH --job-name=EPRL_vertex_precomputation
 #SBATCH --output=EPRL_vertex_precomputation.log
 #SBATCH --error=EPRL_vertex_precomputation.err
@@ -33,25 +33,24 @@ export LD_LIBRARY_PATH="/cvmfs/soft.computecanada.ca/gentoo/2020/usr/lib":$LD_LI
 JULIA_DIR=${JULIA_DIR}
 BASE_DIR=${ROOT_DIR}/Monte_Carlo_spinfoams
 CODE_TO_RUN=EPRL_vertex_precomputation
-SL2CFOAM_DATA_DIR=${SLURM_TMPDIR}/localscratch/frisus95.42647778.0
+SL2CFOAM_DATA_DIR=${SLURM_TMPDIR}
 CUTOFF=10
 JB=0.5
 DL_MIN=0
-DL_MAX=0
+DL_MAX=8
 IMMIRZI=0.1
 STORE_FOLDER=${BASE_DIR}
 COMPUTE_SPINS_CONFIGURATIONS=true
 
-BOOSTER_DIR=${BASE_DIR}
+AMPLS_DIR=${BASE_DIR}
 
 
-# booster extraction
+# booster and amplitudes extraction
 
-echo "Extracting previous boosters to: $SLURM_TMPDIR ..."
+echo "Extracting previous boosters and amplitudes to: $SLURM_TMPDIR ..."
 echo
 
-tar -xvf ${BASE_DIR}/self_energy_EPRL_MC_flying_sampling_BOOSTERS_SHELL_MIN_${DL_MIN}_SHELL_MAX_10_IMMIRZI_${IMMIRZI}_CUTOFF_${CUTOFF}.tar.gz -C $SLURM_TMPDIR
-
+tar -xvf ${BASE_DIR}/${CODE_TO_RUN}_SHELL_MIN_${DL_MIN}_SHELL_MAX_0_IMMIRZI_${IMMIRZI}_CUTOFF_${CUTOFF}.tar.gz -C $SLURM_TMPDIR
 
 
 
@@ -60,9 +59,7 @@ tar -xvf ${BASE_DIR}/self_energy_EPRL_MC_flying_sampling_BOOSTERS_SHELL_MIN_${DL
 echo "Copying fastwig tables to: $SLURM_TMPDIR ..."
 echo
 
-cp ${FASTWIG_TABLES_PATH}/* $SLURM_TMPDIR/localscratch/frisus95.42647778.0
-
-
+cp ${FASTWIG_TABLES_PATH}/* $SLURM_TMPDIR
 
 
 
@@ -77,13 +74,14 @@ echo
 ${JULIA_DIR}/bin/julia -p $SLURM_TASKS_PER_NODE ${BASE_DIR}/src/${CODE_TO_RUN}.jl ${SL2CFOAM_DATA_DIR} ${CUTOFF} ${JB} ${DL_MIN} ${DL_MAX} ${IMMIRZI} ${STORE_FOLDER} ${COMPUTE_SPINS_CONFIGURATIONS}
 
 
+# compressing amplitudes
 
 echo "Compressing and copying computed amplitudes to ${BOOSTER_DIR}..."
 echo
 
-cd $SLURM_TMPDIR/localscratch/frisus95.42647778.0
+cd $SLURM_TMPDIR
 
-tar -czvf ${BOOSTER_DIR}/${CODE_TO_RUN}_SHELL_MIN_${DL_MIN}_SHELL_MAX_${DL_MAX}_IMMIRZI_${IMMIRZI}_CUTOFF_${CUTOFF}.tar.gz vertex/
+tar -czvf ${AMPLS_DIR}/${CODE_TO_RUN}_SHELL_MIN_${DL_MIN}_SHELL_MAX_${DL_MAX}_IMMIRZI_${IMMIRZI}_CUTOFF_${CUTOFF}.tar.gz vertex/
 
 
 echo "Completed"
