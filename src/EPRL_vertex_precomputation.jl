@@ -2,7 +2,7 @@ using Distributed
 
 number_of_workers = nworkers()
 
-printstyled("\nSelf energy EPRL divergence parallelized on $(number_of_workers) worker(s)\n\n"; bold=true, color=:blue)
+printstyled("\nEPRL vertex precomputation parallelized on $(number_of_workers) worker(s)\n\n"; bold=true, color=:blue)
 
 length(ARGS) < 8 && error("use these arguments: DATA_SL2CFOAM_FOLDER    CUTOFF    JB    DL_MIN    DL_MAX     IMMIRZI    STORE_FOLDER    COMPUTE_SPINS_CONFIGURATIONS")
 
@@ -40,58 +40,24 @@ if (COMPUTE_SPINS_CONFIGURATIONS)
     println("done\n")
 end
 
-STORE_AMPLS_FOLDER = "$(STORE_FOLDER)/data/self_energy/jb_$(JB_FLOAT)/exact/EPRL/immirzi_$(IMMIRZI)"
-mkpath(STORE_AMPLS_FOLDER)
+function EPRL_vertex_precomputation(cutoff, jb::HalfInt, Dl::Int, spins_conf_folder::String, step=half(1))
 
-function self_energy_EPRL(cutoff, jb::HalfInt, Dl::Int, spins_conf_folder::String, step=half(1))
-
-    ampls = Float64[]
-
-    result_return = (ret=true, store=false, store_batches=false)
+    result_return = (ret=false, store=true, store_batches=false)
 
     for pcutoff = 0:step:cutoff
 
         @load "$(spins_conf_folder)/configs_pcutoff_$(twice(pcutoff)/2).jld2" spins_configurations
 
-        if isempty(spins_configurations)
-            push!(ampls, 0.0)
-            continue
-        end
-
-        @time tampl = @sync @distributed (+) for spins in spins_configurations
+        @sync @distributed for spins in spins_configurations
 
             j23, j24, j25, j34, j35, j45 = spins
 
-            # restricted range of intertwiners
-            r2, _ = intertwiner_range(jb, j25, j24, j23)
-            r3, _ = intertwiner_range(j23, jb, j34, j35)
-            r4, _ = intertwiner_range(j34, j24, jb, j45)
-            r5, _ = intertwiner_range(j45, j35, j25, jb)
-            rm = ((0, 0), r2, r3, r4, r5)
-
             # compute vertex
-            v = vertex_compute([jb, jb, jb, jb, j23, j24, j25, j34, j35, j45], Dl, rm; result=result_return)
-
-            # face dims
-            dfj = (2j23 + 1) * (2j24 + 1) * (2j25 + 1) * (2j34 + 1) * (2j35 + 1) * (2j45 + 1)
-
-            # contract
-            dfj * dot(v.a, v.a)
+            vertex_compute([jb, jb, jb, jb, j23, j24, j25, j34, j35, j45], Dl; result=result_return)
 
         end
-
-        if isempty(ampls)
-            ampl = tampl
-        else
-            ampl = ampls[end] + tampl
-        end
-
-        log("Amplitude at partial cutoff = $pcutoff: $(ampl)\n")
-        push!(ampls, ampl)
 
     end # partial cutoffs loop
-
-    ampls
 
 end
 
@@ -100,13 +66,7 @@ printstyled("\nStarting computation with jb=$(JB), Dl_min=$(DL_MIN), Dl_max=$(DL
 for Dl = DL_MIN:DL_MAX
 
     printstyled("\nCurrent Dl = $(Dl)...\n"; bold=true, color=:magenta)
-    @time ampls = self_energy_EPRL(CUTOFF, JB, Dl, SPINS_CONF_FOLDER)
-
-    printstyled("\nSaving dataframe...\n"; bold=true, color=:cyan)
-    df = DataFrame([ampls], ["amp"])
-    STORE_AMPLS_FOLDER_DL = "$(STORE_AMPLS_FOLDER)/Dl_$(Dl)"
-    mkpath(STORE_AMPLS_FOLDER_DL)
-    CSV.write("$(STORE_AMPLS_FOLDER_DL)/ampls_cutoff_$(CUTOFF)_ib_0.0.csv", df)
+    @time EPRL_vertex_precomputation(CUTOFF, JB, Dl, SPINS_CONF_FOLDER)
 
 end
 
