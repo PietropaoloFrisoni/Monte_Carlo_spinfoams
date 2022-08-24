@@ -45,6 +45,7 @@ function self_energy_EPRL(cutoff, jb::HalfInt, Dl::Int, Nmc::Int, vec_number_spi
     result_return = (ret=true, store=false, store_batches=false)
 
     # case pcutoff = 0
+    # TODO: generalize this to take into account integer case
     push!(ampls, 0.0)
     push!(stds, 0.0)
 
