@@ -40,6 +40,7 @@ function self_energy_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spins_configur
     stds = Float64[]
 
     # case pcutoff = 0
+    # TODO: generalize this to take into account integer case
     push!(ampls, 0.0)
     push!(stds, 0.0)
 

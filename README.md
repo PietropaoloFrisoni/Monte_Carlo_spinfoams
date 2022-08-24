@@ -30,9 +30,9 @@ where:
 
 - `JB`: value of boundary spins
 
-- `DL_MIN`: minimum value of Dl truncation parameter
+- `DL_MIN`: minimum value of truncation parameter over auxiliary spins
 
-- `DL_MAX`: maximum value of Dl truncation parameter
+- `DL_MAX`: maximum value of truncation parameter over auxiliary spins
 
 - `IMMIRZI`: value of Immirzi parameter
 
