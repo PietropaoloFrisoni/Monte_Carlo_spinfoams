@@ -7,18 +7,3 @@ function init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER::String, Immirzi::Float64)
     # disable C library automatic parallelization
     SL2Cfoam.set_OMP(false)
 end
-
-# logging function (flushing needed)
-function log(x...)
-    println("[ ", now(), " ] - ", join(x, " ")...)
-    flush(stdout)
-end
-
-# comunicate between processes
-macro retrieve_from_process(p, obj, mod=:Main)
-    quote
-        remotecall_fetch($(esc(p)), $(esc(mod)), $(QuoteNode(obj))) do m, o
-            Core.eval(m, o)
-        end
-    end
-end
