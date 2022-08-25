@@ -13,6 +13,7 @@ printstyled("precompiling packages and source codes...\n"; bold=true, color=:cya
 @everywhere begin
     include("../inc/pkgs.jl")
     include("init.jl")
+    include("utilities.jl")
     include("spins_configurations.jl")
 end
 println("done\n")

@@ -14,32 +14,32 @@ To execute the Julia codes (on a single machine with the synthax below) you can 
 $JULIA_EXECUTABLE_PATH   -p   [N-1]    $JULIA_CODE_PATH   $ARGS
 ```
 
-where [N-1] is the number of workers. The `ARGS` parameter depends on the specific kind of computation. We show some examples below.
+where [N-1] is the number of workers. The `ARGS` parameter depends on the specific kind of computation. We show an example below.
 
-### Example: EPRL Monte Carlo
+### Example: Self energy EPRL with monte carlo sampling
 
 ```
-ARGS = DATA_SL2CFOAM_FOLDER    CUTOFF    JB    DL_MIN    DL_MAX     IMMIRZI    STORE_FOLDER    MONTE_CARLO_ITERATIONS    COMPUTE_SPINS_CONFIGURATIONS    COMPUTE_MC_INDICES
+ARGS = DATA_SL2CFOAM_FOLDER    CUTOFF    JB    DL_MIN    DL_MAX     IMMIRZI    STORE_FOLDER    MONTE_CARLO_ITERATIONS    NUMBER_OF_TRIALS    OVERWRITE_PREVIOUS_TRIALS
 ```
 
 where:
 
-- `DATA_SL2CFOAM_FOLDER`: folder with fastwigxj tables where boosters (and possibly vertices) are stored
+- `DATA_SL2CFOAM_FOLDER`: folder with fastwigxj tables where boosters (and possibly vertices) are retrieved/stored
 
 - `CUTOFF`: the maximum value of bulks spins
 
 - `JB`: value of boundary spins
 
-- `DL_MIN`: minimum value of Dl truncation parameter
+- `DL_MIN`: minimum value of truncation parameter over auxiliary spins
 
-- `DL_MAX`: maximum value of Dl truncation parameter
+- `DL_MAX`: maximum value of truncation parameter over auxiliary spins
 
 - `IMMIRZI`: value of Immirzi parameter
 
 - `STORE_FOLDER`: folder where data are saved
 
-- `MONTE_CARLO_ITERATIONS`: number of monte carlo sampling
+- `MONTE_CARLO_ITERATIONS`: number of monte carlo sampling for each trial
 
-- `COMPUTE_SPINS_CONFIGURATIONS`: if `true` computes the spins configurations, if `false` it doesn't (in this case they must have been previously computed)
+- `NUMBER_OF_TRIALS`: number of trials
 
-- `COMPUTE_MC_INDICES`: if `true` computes the monte carlo indices, if `false` it doesn't (in this case they must have been previously computed)
+- `OVERWRITE_PREVIOUS_TRIALS`: if `true` overwrites previous trials, if `false` the new trials are stored along with previous ones

@@ -17,9 +17,9 @@ printstyled("precompiling packages and source codes...\n"; bold=true, color=:cya
 @everywhere begin
     include("../inc/pkgs.jl")
     include("init.jl")
+    include("utilities.jl")    
     include("spins_configurations.jl")
 end
-println("done\n")
 
 CUTOFF_FLOAT = parse(Float64, ARGS[2])
 CUTOFF = HalfInt(CUTOFF_FLOAT)
@@ -27,9 +27,8 @@ CUTOFF = HalfInt(CUTOFF_FLOAT)
 JB_FLOAT = parse(Float64, ARGS[3])
 JB = HalfInt(JB_FLOAT)
 
-printstyled("initializing library with immirzi $(IMMIRZI)...\n"; bold=true, color=:cyan)
+printstyled("initializing library with immirzi $(IMMIRZI)...\n\n"; bold=true, color=:cyan)
 @everywhere init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER, IMMIRZI)
-println("done\n")
 
 SPINS_CONF_FOLDER = "$(STORE_FOLDER)/data/self_energy/jb_$(JB_FLOAT)/spins_configurations"
 
@@ -95,14 +94,14 @@ function self_energy_EPRL(cutoff, jb::HalfInt, Dl::Int, spins_conf_folder::Strin
 
 end
 
-printstyled("\nStarting computation with jb=$(JB), Dl_min=$(DL_MIN), Dl_max=$(DL_MAX), Immirzi=$(IMMIRZI) up to K=$(CUTOFF)...\n"; bold=true, color=:cyan)
+printstyled("\nstarting computation with jb=$(JB), Dl_min=$(DL_MIN), Dl_max=$(DL_MAX), Immirzi=$(IMMIRZI) up to K=$(CUTOFF)...\n"; bold=true, color=:cyan)
 
 for Dl = DL_MIN:DL_MAX
 
-    printstyled("\nCurrent Dl = $(Dl)...\n"; bold=true, color=:magenta)
+    printstyled("\ncurrent Dl = $(Dl)...\n"; bold=true, color=:magenta)
     @time ampls = self_energy_EPRL(CUTOFF, JB, Dl, SPINS_CONF_FOLDER)
 
-    printstyled("\nSaving dataframe...\n"; bold=true, color=:cyan)
+    printstyled("\nsaving dataframe...\n"; bold=true, color=:cyan)
     df = DataFrame([ampls], ["amp"])
     STORE_AMPLS_FOLDER_DL = "$(STORE_AMPLS_FOLDER)/Dl_$(Dl)"
     mkpath(STORE_AMPLS_FOLDER_DL)
