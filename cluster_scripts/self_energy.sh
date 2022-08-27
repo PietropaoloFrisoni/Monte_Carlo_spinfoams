@@ -1,23 +1,20 @@
 #!/bin/bash
 #SBATCH -A def-vidotto
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=32
+#SBATCH --ntasks-per-node=48
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=0
 #SBATCH --time=2-00:00:00
 #SBATCH --job-name=self_energy
 #SBATCH --output=self_energy.log
 #SBATCH --error=self_energy.err
-#SBATCH --mail-type=BEGIN,FAIL,END
-#SBATCH --mail-user=pfrisoni@uwo.ca
-
 
 
 # folders
 
 ROOT_DIR=/home/frisus95/projects/def-vidotto/frisus95
-JULIA_DIR=${ROOT_DIR}/julia*
-SL2CFOAM_DIR=${ROOT_DIR}/sl2cfoam*
+JULIA_DIR=${ROOT_DIR}/julia-1.8.0
+SL2CFOAM_DIR=${ROOT_DIR}/sl2cfoam-next-dev
 FASTWIG_TABLES_PATH=${SL2CFOAM_DIR}/data_sl2cfoam
 
 export LD_LIBRARY_PATH="${SL2CFOAM_DIR}/lib":$LD_LIBRARY_PATH
@@ -74,7 +71,7 @@ ${JULIA_DIR}/bin/julia -p $SLURM_TASKS_PER_NODE ${BASE_DIR}/src/self_energy_EPRL
 echo "Computing amplitudes with Monte Carlo..."
 echo
 
-for MONTE_CARLO_ITERATIONS in 1000 10000 100000 
+for MONTE_CARLO_ITERATIONS in 1000 10000 100000
 do
 ${JULIA_DIR}/bin/julia -p $SLURM_TASKS_PER_NODE ${BASE_DIR}/src/self_energy_EPRL_MC.jl ${SL2CFOAM_DATA_DIR} ${CUTOFF} ${JB} ${DL_MIN} ${DL_MAX} ${IMMIRZI} ${STORE_FOLDER} ${MONTE_CARLO_ITERATIONS} ${NUMBER_OF_TRIALS} ${OVERWRITE_PREVIOUS_TRIALS}
 done
