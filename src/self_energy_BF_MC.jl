@@ -58,22 +58,15 @@ function self_energy_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spins_configur
             j34 = MC_draws[4, bulk_ampls_index]
             j35 = MC_draws[5, bulk_ampls_index]
             j45 = MC_draws[6, bulk_ampls_index]
-
-            # restricted range of intertwiners
-            r2, _ = intertwiner_range(jb, j25, j24, j23)
-            r3, _ = intertwiner_range(j23, jb, j34, j35)
-            r4, _ = intertwiner_range(j34, j24, jb, j45)
-            r5, _ = intertwiner_range(j45, j35, j25, jb)
-            rm = ((0, 0), r2, r3, r4, r5)
-
+            
             # compute vertex
-            v = vertex_BF_compute([jb, jb, jb, jb, j23, j24, j25, j34, j35, j45], rm;)
+            v = vertex_BF_compute([jb, jb, jb, jb, j23, j24, j25, j34, j35, j45])
 
             # face dims
             dfj = (2j23 + 1) * (2j24 + 1) * (2j25 + 1) * (2j34 + 1) * (2j35 + 1) * (2j45 + 1)
 
             # contract
-            bulk_ampls[bulk_ampls_index] = dfj * dot(v.a, v.a)
+            bulk_ampls[bulk_ampls_index] = dfj * dot(v.a[:, :, :, :, 1], v.a[:, :, :, :, 1])
 
         end
 

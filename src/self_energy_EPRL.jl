@@ -17,7 +17,7 @@ printstyled("precompiling packages and source codes...\n"; bold=true, color=:cya
 @everywhere begin
     include("../inc/pkgs.jl")
     include("init.jl")
-    include("utilities.jl")    
+    include("utilities.jl")
     include("spins_configurations.jl")
 end
 
@@ -27,7 +27,7 @@ CUTOFF = HalfInt(CUTOFF_FLOAT)
 JB_FLOAT = parse(Float64, ARGS[3])
 JB = HalfInt(JB_FLOAT)
 
-printstyled("initializing library with immirzi $(IMMIRZI)...\n\n"; bold=true, color=:cyan)
+printstyled("\ninitializing library with immirzi $(IMMIRZI)...\n"; bold=true, color=:cyan)
 @everywhere init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER, IMMIRZI)
 
 SPINS_CONF_FOLDER = "$(STORE_FOLDER)/data/self_energy/jb_$(JB_FLOAT)/spins_configurations"
@@ -61,21 +61,14 @@ function self_energy_EPRL(cutoff, jb::HalfInt, Dl::Int, spins_conf_folder::Strin
 
             j23, j24, j25, j34, j35, j45 = spins
 
-            # restricted range of intertwiners
-            r2, _ = intertwiner_range(jb, j25, j24, j23)
-            r3, _ = intertwiner_range(j23, jb, j34, j35)
-            r4, _ = intertwiner_range(j34, j24, jb, j45)
-            r5, _ = intertwiner_range(j45, j35, j25, jb)
-            rm = ((0, 0), r2, r3, r4, r5)
-
             # compute vertex
-            v = vertex_compute([jb, jb, jb, jb, j23, j24, j25, j34, j35, j45], Dl, rm; result=result_return)
+            v = vertex_compute([jb, jb, jb, jb, j23, j24, j25, j34, j35, j45], Dl; result=result_return)
 
             # face dims
             dfj = (2j23 + 1) * (2j24 + 1) * (2j25 + 1) * (2j34 + 1) * (2j35 + 1) * (2j45 + 1)
 
             # contract
-            dfj * dot(v.a, v.a)
+            dfj * dot(v.a[:, :, :, :, 1], v.a[:, :, :, :, 1])
 
         end
 

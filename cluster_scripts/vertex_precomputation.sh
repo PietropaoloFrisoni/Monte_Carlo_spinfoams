@@ -13,8 +13,8 @@
 # folders
 
 ROOT_DIR=/home/frisus95/projects/def-vidotto/frisus95
-JULIA_DIR=${ROOT_DIR}/julia-1.7.2
-SL2CFOAM_DIR=${ROOT_DIR}/sl2cfoam-next-dev
+JULIA_DIR=${ROOT_DIR}/julia-*
+SL2CFOAM_DIR=${ROOT_DIR}/sl2cfoam*
 FASTWIG_TABLES_PATH=${SL2CFOAM_DIR}/data_sl2cfoam
 
 export LD_LIBRARY_PATH="${SL2CFOAM_DIR}/lib":$LD_LIBRARY_PATH

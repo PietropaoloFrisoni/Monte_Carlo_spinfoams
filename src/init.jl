@@ -1,7 +1,9 @@
 available_cpus = length(Sys.cpu_info())
+number_of_workers = nworkers()
+
 if (number_of_workers > available_cpus)
     printstyled("WARNING: you are using more resources than available cores on this system. Performances will be affected\n\n"; bold=true, color=:red)
-end
+end 
 
 # initialize library
 function init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER::String, Immirzi::Float64)
