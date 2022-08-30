@@ -42,7 +42,7 @@ DL_MAX=10
 IMMIRZI=0.1
 STORE_FOLDER=${BASE_DIR}
 COMPUTE_SPINS_CONFIGURATIONS=true
-NUMBER_OF_TRIALS=5
+NUMBER_OF_TRIALS=15
 OVERWRITE_PREVIOUS_TRIALS=false
 
 
@@ -62,10 +62,10 @@ cp ${FASTWIG_TABLES_PATH}/* $SLURM_TMPDIR/
 
 # running codes
 
-echo "Computing exact amplitudes..."
-echo
+#echo "Computing exact amplitudes..."
+#echo
 
-${JULIA_DIR}/bin/julia -p $SLURM_TASKS_PER_NODE ${BASE_DIR}/src/self_energy_EPRL.jl ${SL2CFOAM_DATA_DIR} ${CUTOFF} ${JB} ${DL_MIN} ${DL_MAX} ${IMMIRZI} ${STORE_FOLDER} ${COMPUTE_SPINS_CONFIGURATIONS}
+#${JULIA_DIR}/bin/julia -p $SLURM_TASKS_PER_NODE ${BASE_DIR}/src/self_energy_EPRL.jl ${SL2CFOAM_DATA_DIR} ${CUTOFF} ${JB} ${DL_MIN} ${DL_MAX} ${IMMIRZI} ${STORE_FOLDER} ${COMPUTE_SPINS_CONFIGURATIONS}
 
 
 echo "Computing amplitudes with Monte Carlo..."
