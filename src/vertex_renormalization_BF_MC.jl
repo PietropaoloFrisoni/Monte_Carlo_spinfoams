@@ -4,21 +4,21 @@ number_of_workers = nworkers()
 
 printstyled("\nVertex renormalization BF monte carlo divergence parallelized on $(number_of_workers) worker(s)\n\n"; bold=true, color=:blue)
 
-length(ARGS) < 6 && error("use these arguments: DATA_SL2CFOAM_FOLDER    CUTOFF    JB    STORE_FOLDER    MONTE_CARLO_ITERATIONS    COMPUTE_NUMBER_SPINS_CONFIGURATIONS    COMPUTE_MC_SPINS")
+length(ARGS) < 7 && error("use these arguments: DATA_SL2CFOAM_FOLDER    CUTOFF    JB    STORE_FOLDER    MONTE_CARLO_ITERATIONS    NUMBER_OF_TRIALS    OVERWRITE_PREVIOUS_TRIALS")
 
 @eval @everywhere DATA_SL2CFOAM_FOLDER = $(ARGS[1])
 @eval STORE_FOLDER = $(ARGS[4])
 MONTE_CARLO_ITERATIONS = parse(Int, ARGS[5])
-COMPUTE_NUMBER_SPINS_CONFIGURATIONS = parse(Bool, ARGS[6])
-COMPUTE_MC_SPINS = parse(Bool, ARGS[7])
+NUMBER_OF_TRIALS = parse(Int, ARGS[6])
+OVERWRITE_PREVIOUS_TRIALS = parse(Bool, ARGS[7])
 
-printstyled("precompiling packages and source codes...\n"; bold=true, color=:cyan)
+printstyled("precompiling packages and source codes...\n\n"; bold=true, color=:cyan)
 @everywhere begin
     include("../inc/pkgs.jl")
     include("init.jl")
+    include("utilities.jl")
     include("spins_configurations.jl")
 end
-println("done\n")
 
 CUTOFF_FLOAT = parse(Float64, ARGS[2])
 CUTOFF = HalfInt(CUTOFF_FLOAT)
@@ -26,30 +26,15 @@ CUTOFF = HalfInt(CUTOFF_FLOAT)
 JB_FLOAT = parse(Float64, ARGS[3])
 JB = HalfInt(JB_FLOAT)
 
-printstyled("initializing library...\n"; bold=true, color=:cyan)
+printstyled("initializing library...\n\n"; bold=true, color=:cyan)
 @everywhere init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER, 0.123) # fictitious Immirzi 
-println("done\n")
 
 SPINS_CONF_FOLDER = "$(STORE_FOLDER)/data/vertex_renormalization/jb_$(JB_FLOAT)/spins_configurations"
-SPINS_MC_FOLDER = "$(STORE_FOLDER)/data/vertex_renormalization/jb_$(JB_FLOAT)/monte_carlo/Nmc_$(MONTE_CARLO_ITERATIONS)/spins_indices"
-
-if (COMPUTE_NUMBER_SPINS_CONFIGURATIONS)
-    printstyled("computing number of spins configurations for jb=$(JB) up to K=$(CUTOFF)...\n\n"; bold=true, color=:cyan)
-    mkpath(SPINS_CONF_FOLDER)
-    @time vertex_renormalization_number_spins_configurations(CUTOFF, JB, SPINS_CONF_FOLDER)
-    println("done\n")
-end
-
-if (COMPUTE_MC_SPINS)
-    printstyled("sampling monte carlo spins for Nmc=$(MONTE_CARLO_ITERATIONS), jb=$(JB) up to K=$(CUTOFF)...\n"; bold=true, color=:cyan)
-    mkpath(SPINS_MC_FOLDER)
-    @time vertex_renormalization_MC_sampling(CUTOFF, MONTE_CARLO_ITERATIONS, JB, SPINS_MC_FOLDER)
-    println("done\n")
-end
-
+SPINS_MC_INDICES_FOLDER = "$(STORE_FOLDER)/data/vertex_renormalization/jb_$(JB_FLOAT)/monte_carlo/Nmc_$(MONTE_CARLO_ITERATIONS)/spins_indices"
 STORE_AMPLS_FOLDER = "$(STORE_FOLDER)/data/vertex_renormalization/jb_$(JB_FLOAT)/monte_carlo/Nmc_$(MONTE_CARLO_ITERATIONS)/BF"
 mkpath(STORE_AMPLS_FOLDER)
 
+# TODO: this has to be completed and (if necessary) hugely optimized
 function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spins_configurations, spins_mc_folder::String, step=half(1))
 
     ampls = Float64[]
@@ -104,25 +89,47 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
             rIur = MC_inner_intertwiners_draws[5, bulk_ampls_index]
 
             # compute vertex up
-            r_u = ((0, 0), rABr[1], rIul[1], rIur[1], rBCl[1])
-            v_u = vertex_BF_compute([jb, jb, jb, jb, jpink, jblue, jbrightgreen, jpurple, jgrassgreen, jred], r_u;)
+            #r_u = ((0, 0), rABr[1], rIul[1], rIur[1], rBCl[1])
+            v_u = vertex_BF_compute([jb, jb, jb, jb, jpink, jblue, jbrightgreen, jpurple, jgrassgreen, jred])
 
             # compute vertex left
-            r_l = ((0, 0), rAEr[1], rIbl[1], rIu[1], rABl[1])
-            v_l = vertex_BF_compute([jb, jb, jb, jb, jbrown, jdarkgreen, jpink, jorange, jblue, jbrightgreen], r_l;)
+            #r_l = ((0, 0), rAEr[1], rIbl[1], rIu[1], rABl[1])
+            v_l = vertex_BF_compute([jb, jb, jb, jb, jbrown, jdarkgreen, jpink, jorange, jblue, jbrightgreen])
 
             # compute vertex bottom-left
-            r_bl = ((0, 0), rbr[1], rIbr[1], rIul[1], rAEl[1])
-            v_bl = vertex_BF_compute([jb, jb, jb, jb, jviolet, jpurple, jbrown, jgrassgreen, jdarkgreen, jpink], r_bl;)
+            #r_bl = ((0, 0), rbr[1], rIbr[1], rIul[1], rAEl[1])
+            v_bl = vertex_BF_compute([jb, jb, jb, jb, jviolet, jpurple, jbrown, jgrassgreen, jdarkgreen, jpink])
 
             # compute vertex bottom-right
-            r_br = ((0, 0), rCDr[1], rIur[1], rIbl[1], rbl[1])
-            v_br = vertex_BF_compute([jb, jb, jb, jb, jred, jorange, jviolet, jblue, jpurple, jbrown], r_br;)
+            #r_br = ((0, 0), rCDr[1], rIur[1], rIbl[1], rbl[1])
+            v_br = vertex_BF_compute([jb, jb, jb, jb, jred, jorange, jviolet, jblue, jpurple, jbrown])
 
             # compute vertex right
-            r_r = ((0, 0), rBCr[1], rIu[1], rIbr[1], rCDl[1])
-            v_r = vertex_BF_compute([jb, jb, jb, jb, jbrightgreen, jgrassgreen, jred, jdarkgreen, jorange, jviolet], r_r;)
+            #r_r = ((0, 0), rBCr[1], rIu[1], rIbr[1], rCDl[1])
+            v_r = vertex_BF_compute([jb, jb, jb, jb, jbrightgreen, jgrassgreen, jred, jdarkgreen, jorange, jviolet])
 
+
+            # PHASE VERTEX UP
+
+            W6j_matrix_vertex_up = Array{Float64}(undef, rBCl[2], rBCr[2])
+
+            for rBCr_intertw = rBCr[1][1]:rBCr[1][2]
+                for rBCl_intertw = rBCl[1][1]:rBCl[1][2]
+                    # TODO: there's for sure a dimensional factor as well
+                    W6j_matrix_vertex_up[Int(rBCl_intertw - rBCl[1][1] + 1), Int(rBCr_intertw - rBCr[1][1] + 1)] = (-1)^(2jb) * float(wigner6j(jb, jbrightgreen, rBCl_intertw, jgrassgreen, jred, rBCr_intertw))
+                end
+            end
+
+            phases_vec_vertex_up = Array{Float64}(undef, rIur[2])
+
+            for rIur_intertw = rIur[1][1]:rIur[1][2]
+                phases_vec_vertex_up[Int(rIur_intertw - rIur[1][1] + 1)] = (-1)^(jblue + jpurple + rIur_intertw)
+            end
+
+            # is this copy necessary? 
+            #TODO: check
+            tensor_with_phase = copy(v_u.a)
+            tensor_contraction!(tensor_with_phase, v_u.a, W6j_matrix_vertex_up, phases_vec_vertex_up)
 
             # outer "left" and "right" have same dimension  
             # TODO: improve efficiency of contraction (@turbo and @simd don't work with this synthax)
@@ -309,7 +316,26 @@ vec_number_spins_configurations = vec(
     ),
 )
 
-printstyled("\nStarting computation with Nmc=$(MONTE_CARLO_ITERATIONS), jb=$(JB) up to K=$(CUTOFF)...\n"; bold=true, color=:cyan)
-@time ampls, stds = vertex_renormalization_BF(CUTOFF, JB, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_FOLDER);
+number_of_previously_stored_trials = 0
+
+if (!OVERWRITE_PREVIOUS_TRIALS)
+    number_of_previously_stored_trials += file_count(STORE_AMPLS_FOLDER)
+    printstyled("\n$(number_of_previously_stored_trials) trials have been previously stored with this configurations, and $(NUMBER_OF_TRIALS) will be added\n"; bold=true, color=:cyan)
+end
+
+for current_trial = 1:NUMBER_OF_TRIALS
+
+    printstyled("\nsampling $(MONTE_CARLO_ITERATIONS) bulk spins configurations in trial $(current_trial)...\n"; bold=true, color=:bold)
+    mkpath(SPINS_MC_INDICES_FOLDER)
+    @time vertex_renormalization_MC_sampling(CUTOFF, MONTE_CARLO_ITERATIONS, JB, SPINS_MC_INDICES_FOLDER)
+
+    printstyled("\nstarting computation in trial $(current_trial) with Nmc=$(MONTE_CARLO_ITERATIONS), jb=$(JB) up to K=$(CUTOFF)...\n"; bold=true, color=:light_magenta)
+    @time ampls, stds = vertex_renormalization_BF(CUTOFF, JB, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_INDICES_FOLDER)
+
+    printstyled("\nsaving dataframe...\n"; bold=true, color=:cyan)
+    df = DataFrame([ampls, stds], ["amp", "std"])
+    CSV.write("$(STORE_AMPLS_FOLDER)/ampls_cutoff_$(CUTOFF)_ib_0.0_trial_$(number_of_previously_stored_trials + current_trial).csv", df)
+
+end
 
 printstyled("\nCompleted\n\n"; bold=true, color=:blue)
