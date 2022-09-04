@@ -20,16 +20,22 @@ macro retrieve_from_process(p, obj, mod=:Main)
   end
 end
 
-# contract a vertex tensor with the 6j matrix (right) and vector with phases (bottom right)
-function tensor_contraction!(tensor_with_phase, original_tensor, W6j_matrix, vec_with_phases)
+@inline function check_size(tensor_pre_contracted, original_tensor)
+  if (size(tensor_pre_contracted) != size(original_tensor))
+    error("\nThe 2 tensors have different sizes")
+  end
+end
 
-  @turbo for i1 in axes(tensor_with_phase, 1), i2 in axes(tensor_with_phase, 2), i3 in axes(tensor_with_phase, 3), i4 in axes(tensor_with_phase, 4), i5 in axes(tensor_with_phase, 5)
+# contract a vertex tensor with the 6j matrix (right) and vector with phases (bottom right)
+function tensor_contraction!(tensor_pre_contracted, original_tensor, W6j_matrix, vec_with_phases=0)
+
+  @turbo for i5 in axes(tensor_pre_contracted, 1), i4 in axes(tensor_pre_contracted, 2), i3 in axes(tensor_pre_contracted, 3), i2 in axes(tensor_pre_contracted, 4), i1 in axes(tensor_pre_contracted, 5)
 
     for k_r in axes(W6j_matrix, 1)
-      tensor_with_phase[i1, i2, i3, i4, i5] = original_tensor[i1, i2, i3, i4, k_r] * W6j_matrix[k_r, i5]
+      tensor_pre_contracted[i5, i4, i3, i2, i1] = original_tensor[k_r, i4, i3, i2, i1] * W6j_matrix[k_r, i5]
     end
 
-    tensor_with_phase[i1, i2, i3, i4, i5] *= vec_with_phases[i4]
+    #tensor_pre_contracted[i1, i2, i3, i4, i5] *= vec_with_phases[i4]
 
   end
 end

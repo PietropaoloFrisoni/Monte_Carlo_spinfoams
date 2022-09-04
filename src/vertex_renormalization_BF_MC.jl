@@ -108,43 +108,119 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
             #r_r = ((0, 0), rBCr[1], rIu[1], rIbr[1], rCDl[1])
             v_r = vertex_BF_compute([jb, jb, jb, jb, jbrightgreen, jgrassgreen, jred, jdarkgreen, jorange, jviolet])
 
+            # face dims
+            dfj = (2jpink + 1) * (2jblue + 1) * (2jbrightgreen + 1) * (2jbrown + 1) * (2jdarkgreen + 1) *
+                  (2jviolet + 1) * (2jpurple + 1) * (2jred + 1) * (2jorange + 1) * (2jgrassgreen + 1)
+
 
             # PHASE VERTEX UP
 
-            W6j_matrix_vertex_up = Array{Float64}(undef, rBCl[2], rBCr[2])
+            W6j_matrix = Array{Float64}(undef, rBCl[2], rBCr[2])
 
             for rBCr_intertw = rBCr[1][1]:rBCr[1][2]
                 for rBCl_intertw = rBCl[1][1]:rBCl[1][2]
-                    # TODO: there's for sure a dimensional factor as well
-                    W6j_matrix_vertex_up[Int(rBCl_intertw - rBCl[1][1] + 1), Int(rBCr_intertw - rBCr[1][1] + 1)] = (-1)^(2jb) * float(wigner6j(jb, jbrightgreen, rBCl_intertw, jgrassgreen, jred, rBCr_intertw))
+                    W6j_matrix[Int(rBCl_intertw - rBCl[1][1] + 1), Int(rBCr_intertw - rBCr[1][1] + 1)] =
+                        float(wigner6j(jb, jbrightgreen, rBCl_intertw, jgrassgreen, jred, rBCr_intertw)) *
+                        (-1)^(2jb) * sqrt((2rBCl_intertw + 1) * (2rBCr_intertw + 1))
                 end
             end
 
-            phases_vec_vertex_up = Array{Float64}(undef, rIur[2])
+            #phases_vec_vertex_up = Array{Float64}(undef, rIur[2])
 
-            for rIur_intertw = rIur[1][1]:rIur[1][2]
-                phases_vec_vertex_up[Int(rIur_intertw - rIur[1][1] + 1)] = (-1)^(jblue + jpurple + rIur_intertw)
+            #for rIur_intertw = rIur[1][1]:rIur[1][2]
+            #    phases_vec_vertex_up[Int(rIur_intertw - rIur[1][1] + 1)] = (-1)^(jblue + jpurple + rIur_intertw)
+            #end
+
+            vertex_up_pre_contracted = Array{Float64}(undef, rBCl[2], rIur[2], rIul[2], rABr[2], 2)
+            check_size(vertex_up_pre_contracted, v_u.a)
+            tensor_contraction!(vertex_up_pre_contracted, v_u.a, W6j_matrix)
+
+
+            # PHASE VERTEX LEFT
+
+            W6j_matrix = Array{Float64}(undef, rABl[2], rABr[2])
+
+            for rABr_intertw = rABr[1][1]:rABr[1][2]
+                for rABl_intertw = rABl[1][1]:rABl[1][2]
+                    W6j_matrix[Int(rABl_intertw - rABl[1][1] + 1), Int(rABr_intertw - rABr[1][1] + 1)] =
+                        float(wigner6j(jb, jpink, rABl_intertw, jblue, jbrightgreen, rABr_intertw)) *
+                        (-1)^(2jb) * sqrt((2rABl_intertw + 1) * (2rABr_intertw + 1))
+                end
             end
 
-            # is this copy necessary? 
-            #TODO: check
-            tensor_with_phase = copy(v_u.a)
-            tensor_contraction!(tensor_with_phase, v_u.a, W6j_matrix_vertex_up, phases_vec_vertex_up)
+            vertex_left_pre_contracted = Array{Float64}(undef, rABl[2], rIu[2], rIbl[2], rAEr[2], 2)
+            check_size(vertex_left_pre_contracted, v_l.a)
+            tensor_contraction!(vertex_left_pre_contracted, v_l.a, W6j_matrix)
+
+
+            # PHASE VERTEX BOTTOM-LEFT
+
+            W6j_matrix = Array{Float64}(undef, rAEl[2], rAEr[2])
+
+            for rAEr_intertw = rAEr[1][1]:rAEr[1][2]
+                for rAEl_intertw = rAEl[1][1]:rAEl[1][2]
+                    W6j_matrix[Int(rAEl_intertw - rAEl[1][1] + 1), Int(rAEr_intertw - rAEr[1][1] + 1)] =
+                        float(wigner6j(jb, jbrown, rAEl_intertw, jdarkgreen, jpink, rAEr_intertw)) *
+                        (-1)^(2jb) * sqrt((rAEl_intertw + 1) * (rAEr_intertw + 1))
+                end
+            end
+
+            vertex_bottom_left_pre_contracted = Array{Float64}(undef, rAEl[2], rIul[2], rIbr[2], rbr[2], 2)
+            tensor_contraction!(vertex_bottom_left_pre_contracted, v_bl.a, W6j_matrix)
+
+
+            # PHASE VERTEX BOTTOM-RIGHT
+
+            W6j_matrix = Array{Float64}(undef, rbl[2], rbr[2])
+
+            for rbr_intertw = rbr[1][1]:rbr[1][2]
+                for rbl_intertw = rbl[1][1]:rbl[1][2]
+                    W6j_matrix[Int(rbl_intertw - rbl[1][1] + 1), Int(rbr_intertw - rbr[1][1] + 1)] =
+                        float(wigner6j(jb, jviolet, rbl_intertw, jpurple, jbrown, rbr_intertw)) *
+                        (-1)^(2jb) * sqrt((rbl_intertw + 1) * (rbr_intertw + 1))
+                end
+            end
+
+            vertex_bottom_right_pre_contracted = Array{Float64}(undef, rbl[2], rIbl[2], rIur[2], rCDr[2], 2)
+            check_size(vertex_bottom_right_pre_contracted, v_br.a)
+            tensor_contraction!(vertex_bottom_right_pre_contracted, v_br.a, W6j_matrix)
+
+
+            # PHASE VERTEX RIGHT
+
+            W6j_matrix = Array{Float64}(undef, rCDl[2], rCDr[2])
+
+            for rCDr_intertw = rCDr[1][1]:rCDr[1][2]
+                for rCDl_intertw = rCDl[1][1]:rCDl[1][2]
+                    W6j_matrix[Int(rCDl_intertw - rCDl[1][1] + 1), Int(rCDr_intertw - rCDr[1][1] + 1)] =
+                        float(wigner6j(jb, jviolet, rCDl_intertw, jpurple, jbrown, rCDr_intertw)) *
+                        (-1)^(2jb) * sqrt((rCDl_intertw + 1) * (rCDr_intertw + 1))
+                end
+            end
+
+            vertex_right_pre_contracted = Array{Float64}(undef, rCDl[2], rIbr[2], rIu[2], rBCr[2], 2)
+            check_size(vertex_right_pre_contracted, v_r.a)
+            tensor_contraction!(vertex_right_pre_contracted, v_r.a, W6j_matrix)
+
+
+            # FINAL INTERTWINER CONTRACTION
 
             # outer "left" and "right" have same dimension  
-            # TODO: improve efficiency of contraction (@turbo and @simd don't work with this synthax)
 
             for rABl_index in 1:rABl[2], rAEl_index in 1:rAEl[2], rbl_index in 1:rbl[2], rCDl_index in 1:rCDl[2], rBCl_index in 1:rBCl[2],
                 rIu_index in 1:rIu[2], rIul_index in 1:rIul[2], rIbl_index in 1:rIbl[2], rIbr_index in 1:rIbr[2], rIur_index in 1:rIur[2]
 
                 bulk_ampls[bulk_ampls_index] +=
-                    v_u.a[rBCl_index, rIur_index, rIul_index, rABl_index, 1] *
-                    v_l.a[rABl_index, rIu_index, rIbl_index, rAEl_index, 1] *
-                    v_bl.a[rAEl_index, rIul_index, rIbr_index, rbl_index, 1] *
-                    v_br.a[rbl_index, rIbl_index, rIur_index, rCDl_index, 1] *
-                    v_r.a[rCDl_index, rIbr_index, rIu_index, rBCl_index, 1]
+                    vertex_up_pre_contracted[rBCl_index, rIur_index, rIul_index, rABl_index, 1] *
+                    vertex_left_pre_contracted[rABl_index, rIu_index, rIbl_index, rAEl_index, 1] *
+                    vertex_bottom_left_pre_contracted[rAEl_index, rIul_index, rIbr_index, rbl_index, 1] *
+                    vertex_bottom_right_pre_contracted[rbl_index, rIbl_index, rIur_index, rCDl_index, 1] *
+                    vertex_right_pre_contracted[rCDl_index, rIbr_index, rIu_index, rBCl_index, 1]
 
             end
+
+            # face dims
+            bulk_ampls[bulk_ampls_index] *= dfj
 
             #= 
             Paranoid check (passed)
