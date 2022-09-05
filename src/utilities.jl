@@ -27,15 +27,30 @@ end
 end
 
 # contract a vertex tensor with the 6j matrix (right) and vector with phases (bottom right)
-function tensor_contraction!(tensor_pre_contracted, original_tensor, W6j_matrix, vec_with_phases=0)
+function tensor_contraction!(tensor_pre_contracted, original_tensor, W6j_matrix)
 
-  @turbo for i5 in axes(tensor_pre_contracted, 1), i4 in axes(tensor_pre_contracted, 2), i3 in axes(tensor_pre_contracted, 3), i2 in axes(tensor_pre_contracted, 4), i1 in axes(tensor_pre_contracted, 5)
+  @turbo for i5 in axes(tensor_pre_contracted, 1), i4 in axes(tensor_pre_contracted, 2), i3 in axes(tensor_pre_contracted, 3), i2 in axes(tensor_pre_contracted, 4)
 
     for k_r in axes(W6j_matrix, 1)
-      tensor_pre_contracted[i5, i4, i3, i2, i1] = original_tensor[k_r, i4, i3, i2, i1] * W6j_matrix[k_r, i5]
+      tensor_pre_contracted[i5, i4, i3, i2, 1] = original_tensor[k_r, i4, i3, i2, 1] * W6j_matrix[k_r, i5]
     end
 
-    #tensor_pre_contracted[i1, i2, i3, i4, i5] *= vec_with_phases[i4]
+    #tensor_pre_contracted[i5, i4, i3, i2, 1] *= vec_with_phases[i4]
+
+  end
+end
+
+
+# contract a vertex tensor with the 6j matrix (right) and vector with phases (bottom right)
+function tensor_contraction!(tensor_pre_contracted, original_tensor, W6j_matrix, phases_vec=0)
+
+  @turbo for i5 in axes(tensor_pre_contracted, 1), i4 in axes(tensor_pre_contracted, 2), i3 in axes(tensor_pre_contracted, 3), i2 in axes(tensor_pre_contracted, 4)
+
+    for k_r in axes(W6j_matrix, 1)
+      tensor_pre_contracted[i5, i4, i3, i2, 1] += original_tensor[k_r, i4, i3, i2, 1] * W6j_matrix[k_r, i5]
+    end
+
+    #tensor_pre_contracted[i5, i4, i3, i2, 1] *= vec_with_phases[i4]
 
   end
 end

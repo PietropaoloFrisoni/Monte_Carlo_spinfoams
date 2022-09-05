@@ -131,7 +131,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
             #    phases_vec_vertex_up[Int(rIur_intertw - rIur[1][1] + 1)] = (-1)^(jblue + jpurple + rIur_intertw)
             #end
 
-            vertex_up_pre_contracted = Array{Float64}(undef, rBCl[2], rIur[2], rIul[2], rABr[2], 2)
+            vertex_up_pre_contracted = zeros(rBCl[2], rIur[2], rIul[2], rABr[2], 2)
             check_size(vertex_up_pre_contracted, v_u.a)
             tensor_contraction!(vertex_up_pre_contracted, v_u.a, W6j_matrix)
 
@@ -148,7 +148,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
                 end
             end
 
-            vertex_left_pre_contracted = Array{Float64}(undef, rABl[2], rIu[2], rIbl[2], rAEr[2], 2)
+            vertex_left_pre_contracted = zeros(rABl[2], rIu[2], rIbl[2], rAEr[2], 2)
             check_size(vertex_left_pre_contracted, v_l.a)
             tensor_contraction!(vertex_left_pre_contracted, v_l.a, W6j_matrix)
 
@@ -165,7 +165,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
                 end
             end
 
-            vertex_bottom_left_pre_contracted = Array{Float64}(undef, rAEl[2], rIul[2], rIbr[2], rbr[2], 2)
+            vertex_bottom_left_pre_contracted = zeros(rAEl[2], rIul[2], rIbr[2], rbr[2], 2)
             tensor_contraction!(vertex_bottom_left_pre_contracted, v_bl.a, W6j_matrix)
 
 
@@ -181,7 +181,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
                 end
             end
 
-            vertex_bottom_right_pre_contracted = Array{Float64}(undef, rbl[2], rIbl[2], rIur[2], rCDr[2], 2)
+            vertex_bottom_right_pre_contracted = zeros(rbl[2], rIbl[2], rIur[2], rCDr[2], 2)
             check_size(vertex_bottom_right_pre_contracted, v_br.a)
             tensor_contraction!(vertex_bottom_right_pre_contracted, v_br.a, W6j_matrix)
 
@@ -198,19 +198,19 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
                 end
             end
 
-            vertex_right_pre_contracted = Array{Float64}(undef, rCDl[2], rIbr[2], rIu[2], rBCr[2], 2)
+            vertex_right_pre_contracted = zeros(rCDl[2], rIbr[2], rIu[2], rBCr[2], 2)
             check_size(vertex_right_pre_contracted, v_r.a)
             tensor_contraction!(vertex_right_pre_contracted, v_r.a, W6j_matrix)
 
 
             # FINAL INTERTWINER CONTRACTION
 
-            # outer "left" and "right" have same dimension  
+            # outer "left" and "right" have same dimension
 
             for rABl_index in 1:rABl[2], rAEl_index in 1:rAEl[2], rbl_index in 1:rbl[2], rCDl_index in 1:rCDl[2], rBCl_index in 1:rBCl[2],
                 rIu_index in 1:rIu[2], rIul_index in 1:rIul[2], rIbl_index in 1:rIbl[2], rIbr_index in 1:rIbr[2], rIur_index in 1:rIur[2]
 
-                bulk_ampls[bulk_ampls_index] +=
+                @inbounds bulk_ampls[bulk_ampls_index] +=
                     vertex_up_pre_contracted[rBCl_index, rIur_index, rIul_index, rABl_index, 1] *
                     vertex_left_pre_contracted[rABl_index, rIu_index, rIbl_index, rAEl_index, 1] *
                     vertex_bottom_left_pre_contracted[rAEl_index, rIul_index, rIbr_index, rbl_index, 1] *
