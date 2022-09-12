@@ -26,7 +26,7 @@ end
   end
 end
 
-# contract a vertex tensor with the 6j matrix (right) and vector with phases (bottom right)
+# contract a vertex tensor with the 6j matrix (on the right)
 function tensor_contraction!(tensor_pre_contracted, original_tensor, W6j_matrix)
 
   @turbo for i5 in axes(tensor_pre_contracted, 1), i4 in axes(tensor_pre_contracted, 2), i3 in axes(tensor_pre_contracted, 3), i2 in axes(tensor_pre_contracted, 4)
@@ -35,22 +35,15 @@ function tensor_contraction!(tensor_pre_contracted, original_tensor, W6j_matrix)
       tensor_pre_contracted[i5, i4, i3, i2, 1] = original_tensor[k_r, i4, i3, i2, 1] * W6j_matrix[k_r, i5]
     end
 
-    #tensor_pre_contracted[i5, i4, i3, i2, 1] *= vec_with_phases[i4]
-
   end
 end
 
-
-# contract a vertex tensor with the 6j matrix (right) and vector with phases (bottom right)
-function tensor_contraction!(tensor_pre_contracted, original_tensor, W6j_matrix, phases_vec=0)
-
-  @turbo for i5 in axes(tensor_pre_contracted, 1), i4 in axes(tensor_pre_contracted, 2), i3 in axes(tensor_pre_contracted, 3), i2 in axes(tensor_pre_contracted, 4)
-
-    for k_r in axes(W6j_matrix, 1)
-      tensor_pre_contracted[i5, i4, i3, i2, 1] += original_tensor[k_r, i4, i3, i2, 1] * W6j_matrix[k_r, i5]
-    end
-
-    #tensor_pre_contracted[i5, i4, i3, i2, 1] *= vec_with_phases[i4]
-
+#TODO: check mem allocations
+function from_index_to_intertwiner(tuple, index)
+  intertwiner = tuple[1][1] + index - 1
+  if (intertwiner > tuple[1][2])
+    error("intertwiner out of range")
+  else
+    return intertwiner
   end
 end

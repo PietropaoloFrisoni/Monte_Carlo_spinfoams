@@ -38,12 +38,10 @@ mkpath(STORE_AMPLS_FOLDER)
 function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spins_configurations, spins_mc_folder::String, step=half(1))
 
     ampls = Float64[]
-    stds = Float64[]
 
     # case pcutoff = 0
     # TODO: generalize this to take into account integer case
     push!(ampls, 0.0)
-    push!(stds, 0.0)
 
     for pcutoff = step:step:cutoff
 
@@ -117,22 +115,18 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
 
             W6j_matrix = Array{Float64}(undef, rBCl[2], rBCr[2])
 
-            for rBCr_intertw = rBCr[1][1]:rBCr[1][2]
-                for rBCl_intertw = rBCl[1][1]:rBCl[1][2]
-                    W6j_matrix[Int(rBCl_intertw - rBCl[1][1] + 1), Int(rBCr_intertw - rBCr[1][1] + 1)] =
+            for rBCr_index = 1:rBCr[2]
+                rBCr_intertw = from_index_to_intertwiner(rBCr, rBCr_index)
+                for rBCl_index = 1:rBCl[2]
+                    rBCl_intertw = from_index_to_intertwiner(rBCl, rBCl_index)
+                    W6j_matrix[rBCl_index, rBCr_index] =
                         float(wigner6j(jb, jbrightgreen, rBCl_intertw, jgrassgreen, jred, rBCr_intertw)) *
                         (-1)^(2jb) * sqrt((2rBCl_intertw + 1) * (2rBCr_intertw + 1))
                 end
             end
 
-            #phases_vec_vertex_up = Array{Float64}(undef, rIur[2])
-
-            #for rIur_intertw = rIur[1][1]:rIur[1][2]
-            #    phases_vec_vertex_up[Int(rIur_intertw - rIur[1][1] + 1)] = (-1)^(jblue + jpurple + rIur_intertw)
-            #end
-
-            vertex_up_pre_contracted = zeros(rBCl[2], rIur[2], rIul[2], rABr[2], 2)
-            check_size(vertex_up_pre_contracted, v_u.a)
+            vertex_up_pre_contracted = zeros(rBCr[2], rIur[2], rIul[2], rABr[2], 2)
+            #check_size(vertex_up_pre_contracted, v_u.a)
             tensor_contraction!(vertex_up_pre_contracted, v_u.a, W6j_matrix)
 
 
@@ -140,16 +134,18 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
 
             W6j_matrix = Array{Float64}(undef, rABl[2], rABr[2])
 
-            for rABr_intertw = rABr[1][1]:rABr[1][2]
-                for rABl_intertw = rABl[1][1]:rABl[1][2]
-                    W6j_matrix[Int(rABl_intertw - rABl[1][1] + 1), Int(rABr_intertw - rABr[1][1] + 1)] =
+            for rABr_index = 1:rABr[2]
+                rABr_intertw = from_index_to_intertwiner(rABr, rABr_index)
+                for rABl_index = 1:rABl[2]
+                    rABl_intertw = from_index_to_intertwiner(rABl, rABl_index)
+                    W6j_matrix[rABl_index, rABr_index] =
                         float(wigner6j(jb, jpink, rABl_intertw, jblue, jbrightgreen, rABr_intertw)) *
                         (-1)^(2jb) * sqrt((2rABl_intertw + 1) * (2rABr_intertw + 1))
                 end
             end
 
-            vertex_left_pre_contracted = zeros(rABl[2], rIu[2], rIbl[2], rAEr[2], 2)
-            check_size(vertex_left_pre_contracted, v_l.a)
+            vertex_left_pre_contracted = zeros(rABr[2], rIu[2], rIbl[2], rAEr[2], 2)
+            #check_size(vertex_left_pre_contracted, v_l.a)
             tensor_contraction!(vertex_left_pre_contracted, v_l.a, W6j_matrix)
 
 
@@ -157,15 +153,17 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
 
             W6j_matrix = Array{Float64}(undef, rAEl[2], rAEr[2])
 
-            for rAEr_intertw = rAEr[1][1]:rAEr[1][2]
-                for rAEl_intertw = rAEl[1][1]:rAEl[1][2]
-                    W6j_matrix[Int(rAEl_intertw - rAEl[1][1] + 1), Int(rAEr_intertw - rAEr[1][1] + 1)] =
+            for rAEr_index = 1:rAEr[2]
+                rAEr_intertw = from_index_to_intertwiner(rAEr, rAEr_index)
+                for rAEl_index = 1:rAEl[2]
+                    rAEl_intertw = from_index_to_intertwiner(rAEl, rAEl_index)
+                    W6j_matrix[rAEl_index, rAEr_index] =
                         float(wigner6j(jb, jbrown, rAEl_intertw, jdarkgreen, jpink, rAEr_intertw)) *
                         (-1)^(2jb) * sqrt((rAEl_intertw + 1) * (rAEr_intertw + 1))
                 end
             end
 
-            vertex_bottom_left_pre_contracted = zeros(rAEl[2], rIul[2], rIbr[2], rbr[2], 2)
+            vertex_bottom_left_pre_contracted = zeros(rAEr[2], rIul[2], rIbr[2], rbr[2], 2)
             tensor_contraction!(vertex_bottom_left_pre_contracted, v_bl.a, W6j_matrix)
 
 
@@ -173,16 +171,18 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
 
             W6j_matrix = Array{Float64}(undef, rbl[2], rbr[2])
 
-            for rbr_intertw = rbr[1][1]:rbr[1][2]
-                for rbl_intertw = rbl[1][1]:rbl[1][2]
-                    W6j_matrix[Int(rbl_intertw - rbl[1][1] + 1), Int(rbr_intertw - rbr[1][1] + 1)] =
+            for rbr_index = 1:rbr[2]
+                rbr_intertw = from_index_to_intertwiner(rbr, rbr_index)
+                for rbl_index = 1:rbl[2]
+                    rbl_intertw = from_index_to_intertwiner(rbl, rbl_index)
+                    W6j_matrix[rbl_index, rbr_index] =
                         float(wigner6j(jb, jviolet, rbl_intertw, jpurple, jbrown, rbr_intertw)) *
                         (-1)^(2jb) * sqrt((rbl_intertw + 1) * (rbr_intertw + 1))
                 end
             end
 
-            vertex_bottom_right_pre_contracted = zeros(rbl[2], rIbl[2], rIur[2], rCDr[2], 2)
-            check_size(vertex_bottom_right_pre_contracted, v_br.a)
+            vertex_bottom_right_pre_contracted = zeros(rbr[2], rIbl[2], rIur[2], rCDr[2], 2)
+            #check_size(vertex_bottom_right_pre_contracted, v_br.a)
             tensor_contraction!(vertex_bottom_right_pre_contracted, v_br.a, W6j_matrix)
 
 
@@ -190,37 +190,46 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
 
             W6j_matrix = Array{Float64}(undef, rCDl[2], rCDr[2])
 
-            for rCDr_intertw = rCDr[1][1]:rCDr[1][2]
-                for rCDl_intertw = rCDl[1][1]:rCDl[1][2]
-                    W6j_matrix[Int(rCDl_intertw - rCDl[1][1] + 1), Int(rCDr_intertw - rCDr[1][1] + 1)] =
-                        float(wigner6j(jb, jviolet, rCDl_intertw, jpurple, jbrown, rCDr_intertw)) *
+            for rCDr_index = 1:rCDr[2]
+                rCDr_intertw = from_index_to_intertwiner(rCDr, rCDr_index)
+                for rCDl_index = 1:rCDl[2]
+                    rCDl_intertw = from_index_to_intertwiner(rCDl, rCDl_index)
+                    W6j_matrix[rCDl_index, rCDr_index] =
+                        float(wigner6j(jb, jred, rCDl_intertw, jorange, jviolet, rCDr_intertw)) *
                         (-1)^(2jb) * sqrt((rCDl_intertw + 1) * (rCDr_intertw + 1))
                 end
             end
 
-            vertex_right_pre_contracted = zeros(rCDl[2], rIbr[2], rIu[2], rBCr[2], 2)
-            check_size(vertex_right_pre_contracted, v_r.a)
+            vertex_right_pre_contracted = zeros(rCDr[2], rIbr[2], rIu[2], rBCr[2], 2)
+            #check_size(vertex_right_pre_contracted, v_r.a)
             tensor_contraction!(vertex_right_pre_contracted, v_r.a, W6j_matrix)
 
 
             # FINAL INTERTWINER CONTRACTION
 
-            # outer "left" and "right" have same dimension
+            # after pre-contraction, outer left intertwiners don't exist anymore
 
-            for rABl_index in 1:rABl[2], rAEl_index in 1:rAEl[2], rbl_index in 1:rbl[2], rCDl_index in 1:rCDl[2], rBCl_index in 1:rBCl[2],
+            for rAB_index in 1:rABr[2], rAE_index in 1:rAEr[2], rb_index in 1:rbr[2], rCD_index in 1:rCDr[2], rBC_index in 1:rBCr[2],
                 rIu_index in 1:rIu[2], rIul_index in 1:rIul[2], rIbl_index in 1:rIbl[2], rIbr_index in 1:rIbr[2], rIur_index in 1:rIur[2]
 
-                @inbounds bulk_ampls[bulk_ampls_index] +=
-                    vertex_up_pre_contracted[rBCl_index, rIur_index, rIul_index, rABl_index, 1] *
-                    vertex_left_pre_contracted[rABl_index, rIu_index, rIbl_index, rAEl_index, 1] *
-                    vertex_bottom_left_pre_contracted[rAEl_index, rIul_index, rIbr_index, rbl_index, 1] *
-                    vertex_bottom_right_pre_contracted[rbl_index, rIbl_index, rIur_index, rCDl_index, 1] *
-                    vertex_right_pre_contracted[rCDl_index, rIbr_index, rIu_index, rBCl_index, 1]
+                rIu_intertw = from_index_to_intertwiner(rIu, rIu_index)
+                rIul_intertw = from_index_to_intertwiner(rIul, rIul_index)
+                rIbl_intertw = from_index_to_intertwiner(rIbl, rIbl_index)
+                rIbr_intertw = from_index_to_intertwiner(rIbr, rIbr_index)
+                rIur_intertw = from_index_to_intertwiner(rIur, rIur_index)
+
+                bulk_ampls[bulk_ampls_index] +=
+                    vertex_up_pre_contracted[rBC_index, rIur_index, rIul_index, rAB_index, 1] * (-1)^(jblue + jpurple + rIur_intertw)
+                vertex_left_pre_contracted[rAB_index, rIu_index, rIbl_index, rAE_index, 1] * (-1)^(jdarkgreen + jorange + rIu_intertw)
+                vertex_bottom_left_pre_contracted[rAE_index, rIul_index, rIbr_index, rb_index, 1] * (-1)^(jgrassgreen + jpurple + rIul_intertw)
+                vertex_bottom_right_pre_contracted[rb_index, rIbl_index, rIur_index, rCD_index, 1] * (-1)^(jorange + jblue + rIbl_intertw)
+                vertex_right_pre_contracted[rCD_index, rIbr_index, rIu_index, rBC_index, 1] * (-1)^(jgrassgreen + jdarkgreen + rIbr_intertw)
 
             end
 
             # face dims
-            bulk_ampls[bulk_ampls_index] *= dfj
+            bulk_ampls[bulk_ampls_index] *= dfj * (-1)^(2jpink) * (-1)^(2jblue) * (-1)^(2jbrightgreen) * (-1)^(2jbrown) * (-1)^(2jdarkgreen) *
+                                            (-1)^(2jviolet) * (-1)^(2jpurple) * (-1)^(2jred) * (-1)^(2jorange) * (-1)^(2jgrassgreen)
 
             #= 
             Paranoid check (passed)
@@ -350,43 +359,32 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
 
         tampl = mean(bulk_ampls)
 
-        tampl_var = 0.0
-        for i = 1:Nmc
-            tampl_var += (bulk_ampls[i] - tampl)^2
-        end
-        tampl_var /= (Nmc - 1)
-
         # normalize
         index_cutoff = Int(2 * pcutoff + 1)
         tnconf = vec_number_spins_configurations[index_cutoff] - vec_number_spins_configurations[index_cutoff-1]
         tampl *= tnconf
-        tampl_std = sqrt(tampl_var * (tnconf^2) / Nmc)
 
         if isempty(ampls)
             ampl = tampl
-            std = tampl_std
         else
             ampl = ampls[end] + tampl
-            std = stds[end] + tampl_std
         end
 
         log("Amplitude at partial cutoff = $pcutoff: $(ampl)")
         push!(ampls, ampl)
-        println("Amplitude std at partial cutoff = $pcutoff: $(std)\n")
-        push!(stds, std)
 
     end # partial cutoffs loop
 
-    ampls, stds
+    ampls
 
 end
 
-printstyled("\nLoading CSV file with number of spins configurations for jb=$(JB) up to K=$(CUTOFF)...\n"; bold=true, color=:cyan)
+printstyled("\nLoading CSV file with number of spins configurations for jb=$(JB) up to K=10...\n"; bold=true, color=:cyan)
 vec_number_spins_configurations = vec(
     Matrix(
         DataFrame(
             CSV.File(
-                "$(SPINS_CONF_FOLDER)/spins_configurations_cutoff_$(CUTOFF_FLOAT).csv"
+                "$(SPINS_CONF_FOLDER)/spins_configurations_cutoff_10.0.csv"
             ),
         ),
     ),
@@ -406,10 +404,10 @@ for current_trial = 1:NUMBER_OF_TRIALS
     @time vertex_renormalization_MC_sampling(CUTOFF, MONTE_CARLO_ITERATIONS, JB, SPINS_MC_INDICES_FOLDER)
 
     printstyled("\nstarting computation in trial $(current_trial) with Nmc=$(MONTE_CARLO_ITERATIONS), jb=$(JB) up to K=$(CUTOFF)...\n"; bold=true, color=:light_magenta)
-    @time ampls, stds = vertex_renormalization_BF(CUTOFF, JB, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_INDICES_FOLDER)
+    @time ampls = vertex_renormalization_BF(CUTOFF, JB, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_INDICES_FOLDER)
 
     printstyled("\nsaving dataframe...\n"; bold=true, color=:cyan)
-    df = DataFrame([ampls, stds], ["amp", "std"])
+    df = DataFrame([ampls], ["amp"])
     CSV.write("$(STORE_AMPLS_FOLDER)/ampls_cutoff_$(CUTOFF)_ib_0.0_trial_$(number_of_previously_stored_trials + current_trial).csv", df)
 
 end
