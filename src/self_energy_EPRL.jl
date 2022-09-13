@@ -33,7 +33,7 @@ printstyled("\ninitializing library with immirzi $(IMMIRZI)...\n"; bold=true, co
 SPINS_CONF_FOLDER = "$(STORE_FOLDER)/data/self_energy/jb_$(JB_FLOAT)/spins_configurations"
 
 if (COMPUTE_SPINS_CONFIGURATIONS)
-    printstyled("computing spins configurations for jb $(JB) up to cutoff $(CUTOFF)...\n\n"; bold=true, color=:cyan)
+    printstyled("\ncomputing spins configurations for jb $(JB) up to cutoff $(CUTOFF)...\n\n"; bold=true, color=:cyan)
     mkpath(SPINS_CONF_FOLDER)
     @time self_energy_spins_conf(CUTOFF, JB, SPINS_CONF_FOLDER)
     println("done\n")

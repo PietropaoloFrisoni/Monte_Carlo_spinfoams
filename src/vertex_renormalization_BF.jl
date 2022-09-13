@@ -33,25 +33,32 @@ SPINS_CONF_FOLDER = "$(STORE_FOLDER)/data/vertex_renormalization/jb_$(JB_FLOAT)/
 if (COMPUTE_SPINS_CONFIGURATIONS)
     printstyled("computing spins configurations for jb $(JB) up to cutoff $(CUTOFF)...\n\n"; bold=true, color=:cyan)
     mkpath(SPINS_CONF_FOLDER)
-    @time vertex_renormalization_spins_conf(CUTOFF, JB, SPINS_CONF_FOLDER)
+    @time vertex_renormalization_number_spins_configurations(CUTOFF, JB, SPINS_CONF_FOLDER)
     println("done\n")
 end
 
 STORE_AMPLS_FOLDER = "$(STORE_FOLDER)/data/vertex_renormalization/jb_$(JB_FLOAT)/exact/BF"
 mkpath(STORE_AMPLS_FOLDER)
 
-# TODO: da qui in poi è tutto da modificare!!!
-
-# TODO: this has to be completed and (if necessary) hugely optimized
-function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spins_configurations, spins_mc_folder::String, step=half(1))
+#= TODO: this has to be completed and (if necessary) hugely optimized
+function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::String, step=half(1))
 
     ampls = Float64[]
 
-    # case pcutoff = 0
-    # TODO: generalize this to take into account integer case
-    push!(ampls, 0.0)
+    for pcutoff = 0:step:cutoff
 
-    for pcutoff = step:step:cutoff
+        @load "$(spins_conf_folder)/configs_pcutoff_$(twice(pcutoff)/2).jld2" spins_configurations
+
+        if isempty(spins_configurations)
+            push!(ampls, 0.0)
+            continue
+        end
+
+        @time tampl = @sync @distributed (+) for spins in spins_configurations
+
+        jpink, jblue, jbrightgreen, jbrown, jdarkgreen, jviolet, jpurple, jred, jorange, jgrassgreen = spins
+
+         end
 
         # load MC bulk spins 
         @load "$(spins_mc_folder)/MC_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_draws
@@ -239,130 +246,6 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
             bulk_ampls[bulk_ampls_index] *= dfj * (-1)^(2jpink) * (-1)^(2jblue) * (-1)^(2jbrightgreen) * (-1)^(2jbrown) * (-1)^(2jdarkgreen) *
                                             (-1)^(2jviolet) * (-1)^(2jpurple) * (-1)^(2jred) * (-1)^(2jorange) * (-1)^(2jgrassgreen)
 
-            #= 
-            Paranoid check (passed)
-
-            AB right
-            rABr = intertwiner_range(
-                jpink,
-                jblue,
-                jbrightgreen,
-                jb,
-            )
-
-            if (rABr != MC_right_intertwiners_draws[1, bulk_ampls_index])
-                println("OPS")
-            end
-
-            # AB left
-            rABl = intertwiner_range(
-                jbrightgreen,
-                jblue,
-                jpink,
-                jb,
-            )
-
-            if (rABl != MC_left_intertwiners_draws[1, bulk_ampls_index])
-                println("OPS")
-            end
-
-            # AE right
-            rAEr = intertwiner_range(
-                jbrown,
-                jdarkgreen,
-                jpink,
-                jb
-            )
-
-            if (rAEr != MC_right_intertwiners_draws[2, bulk_ampls_index])
-                println("OPS")
-            end
-
-            # AE left
-            rAEl = intertwiner_range(
-                jpink,
-                jdarkgreen,
-                jbrown,
-                jb
-            )
-
-            if (rAEl != MC_left_intertwiners_draws[2, bulk_ampls_index])
-                println("OPS")
-            end
-
-            # bottom right
-            rbr = intertwiner_range(
-                jviolet,
-                jpurple,
-                jbrown,
-                jb
-            )
-
-            if (rbr != MC_right_intertwiners_draws[3, bulk_ampls_index])
-                println("OPS")
-            end
-
-            # bottom left
-            rbl = intertwiner_range(
-                jbrown,
-                jpurple,
-                jviolet,
-                jb
-            )
-
-            if (rbl != MC_left_intertwiners_draws[3, bulk_ampls_index])
-                println("OPS")
-            end
-
-            # CD right
-            rCDr = intertwiner_range(
-                jred,
-                jorange,
-                jviolet,
-                jb
-            )
-
-            if (rCDr != MC_right_intertwiners_draws[4, bulk_ampls_index])
-                println("OPS")
-            end
-
-            # CD left
-            rCDl = intertwiner_range(
-                jviolet,
-                jorange,
-                jred,
-                jb
-            )
-
-            if (rCDl != MC_left_intertwiners_draws[4, bulk_ampls_index])
-                println("OPS")
-            end
-
-            # BC right
-            rBCr = intertwiner_range(
-                jbrightgreen,
-                jgrassgreen,
-                jred,
-                jb
-            )
-
-            if (rBCr != MC_right_intertwiners_draws[5, bulk_ampls_index])
-                println("OPS")
-            end
-
-            # BC left
-            rBCl = intertwiner_range(
-                jred,
-                jgrassgreen,
-                jbrightgreen,
-                jb
-            )
-
-            if (rBCl != MC_left_intertwiners_draws[5, bulk_ampls_index])
-                println("OPS")
-            end
-
-            =#
         end
 
         tampl = mean(bulk_ampls)
@@ -421,3 +304,5 @@ for current_trial = 1:NUMBER_OF_TRIALS
 end
 
 printstyled("\nCompleted\n\n"; bold=true, color=:blue)
+
+=#

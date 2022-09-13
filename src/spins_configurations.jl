@@ -199,6 +199,13 @@ function vertex_renormalization_number_spins_configurations(cutoff, jb::HalfInt,
     # loop over partial cutoffs
     for pcutoff = 0:step:cutoff
 
+        # generate a list of all spins and intertwiners to compute
+        spins_configurations = NTuple{10,HalfInt8}[]
+        
+        right_intertwiners_configurations = NTuple{5,Tuple{Tuple{HalfInt8,HalfInt8},Int8}}[]
+        left_intertwiners_configurations = NTuple{5,Tuple{Tuple{HalfInt8,HalfInt8},Int8}}[]
+        inner_intertwiners_configurations = NTuple{5,Tuple{Tuple{HalfInt8,HalfInt8},Int8}}[]
+
         counter_partial_configurations = 0
 
         for jpink::HalfInt = 0:step:pcutoff, jblue::HalfInt = 0:step:pcutoff, jbrightgreen::HalfInt = 0:step:pcutoff,
@@ -212,50 +219,160 @@ function vertex_renormalization_number_spins_configurations(cutoff, jb::HalfInt,
                 jpurple <= (pcutoff - step) && jred <= (pcutoff - step) && jorange <= (pcutoff - step) &&
                 jgrassgreen <= (pcutoff - step) && continue
 
-            # check AB
-            r, _ = intertwiner_range(jpink, jblue, jbrightgreen, jb)
-            isempty(r) && continue
+            # we check triangular inequalities computing the range of right intertwiners,
+            # as we want to avoid zeros and left and right intertwiners have same dimension
 
-            # check AE
-            r, _ = intertwiner_range(jbrown, jdarkgreen, jpink, jb)
-            isempty(r) && continue
+            # AB right check
+            rABr = intertwiner_range(
+                jpink,
+                jblue,
+                jbrightgreen,
+                jb,
+            )
+            (rABr[2] == 0) && continue
 
-            # check bottom
-            r, _ = intertwiner_range(jviolet, jpurple, jbrown, jb)
-            isempty(r) && continue
+            # AE right check
+            rAEr = intertwiner_range(
+                jbrown,
+                jdarkgreen,
+                jpink,
+                jb
+            )
+            (rAEr[2] == 0) && continue
 
-            # check CD
-            r, _ = intertwiner_range(jred, jorange, jviolet, jb)
-            isempty(r) && continue
+            # bottom right check
+            rbr = intertwiner_range(
+                jviolet,
+                jpurple,
+                jbrown,
+                jb
+            )
+            (rbr[2] == 0) && continue
 
-            # check BC
-            r, _ = intertwiner_range(jbrightgreen, jgrassgreen, jred, jb)
-            isempty(r) && continue
+            # CD right check
+            rCDr = intertwiner_range(
+                jred,
+                jorange,
+                jviolet,
+                jb
+            )
+            (rCDr[2] == 0) && continue
+
+            # BC right check
+            rBCr = intertwiner_range(
+                jbrightgreen,
+                jgrassgreen,
+                jred,
+                jb
+            )
+            (rBCr[2] == 0) && continue
 
             # inner check up
-            r, _ = intertwiner_range(jorange, jdarkgreen, jb, jbrightgreen)
-            isempty(r) && continue
+            rIu = intertwiner_range(
+                jorange,
+                jdarkgreen,
+                jb,
+                jbrightgreen
+            )
+            (rIu[2] == 0) && continue
 
             # inner check up-left
-            r, _ = intertwiner_range(jgrassgreen, jpurple, jb, jpink)
-            isempty(r) && continue
+            rIul = intertwiner_range(
+                jgrassgreen,
+                jpurple,
+                jb,
+                jpink
+            )
+            (rIul[2] == 0) && continue
 
             # inner check bottom-left
-            r, _ = intertwiner_range(jblue, jorange, jb, jbrown)
-            isempty(r) && continue
+            rIbl = intertwiner_range(
+                jblue,
+                jorange,
+                jb,
+                jbrown
+            )
+            (rIbl[2] == 0) && continue
 
             # inner check bottom-right
-            r, _ = intertwiner_range(jdarkgreen, jgrassgreen, jb, jviolet)
-            isempty(r) && continue
+            rIbr = intertwiner_range(
+                jdarkgreen,
+                jgrassgreen,
+                jb,
+                jviolet
+            )
+            (rIbr[2] == 0) && continue
 
             # inner check up-right
-            r, _ = intertwiner_range(jpurple, jblue, jb, jred)
-            isempty(r) && continue
+            rIur = intertwiner_range(
+                jpurple,
+                jblue,
+                jb,
+                jred
+            )
+            (rIur[2] == 0) && continue
 
-            # must be taken into account
+
+            # bulk spins have passed all tests -> must be computed
+
+            # now we compute also the range of left intertwiners,
+            # as these will be required during the contraction phase
+
+            # AB left
+            rABl = intertwiner_range(
+                jbrightgreen,
+                jblue,
+                jpink,
+                jb,
+            )
+
+            # AE left
+            rAEl = intertwiner_range(
+                jpink,
+                jdarkgreen,
+                jbrown,
+                jb
+            )
+
+            # bottom left
+            rbl = intertwiner_range(
+                jbrown,
+                jpurple,
+                jviolet,
+                jb
+            )
+
+            # CD left
+            rCDl = intertwiner_range(
+                jviolet,
+                jorange,
+                jred,
+                jb
+            )
+
+            # BC left
+            rBCl = intertwiner_range(
+                jred,
+                jgrassgreen,
+                jbrightgreen,
+                jb
+            )
+
             counter_partial_configurations += 1
 
+            push!(spins_configurations, (jpink, jblue, jbrightgreen, jbrown, jdarkgreen, jviolet, jpurple, jred, jorange, jgrassgreen))
+            push!(right_intertwiners_configurations, (rABr, rAEr, rbr, rCDr, rBCr))
+            push!(left_intertwiners_configurations, (rABl, rAEl, rbl, rCDl, rBCl))
+            push!(inner_intertwiners_configurations, (rIu, rIul, rIbl, rIbr, rIur))
+
         end
+
+        # store partial spins configurations and intertwiners at pctuoff
+        @save "$(configs_path)/configs_pcutoff_$(twice(pcutoff)/2).jld2" spins_configurations
+
+        @save "$(configs_path)/right_intertwiners_configurations_pcutoff_$(twice(pcutoff)/2).jld2" right_intertwiners_configurations
+        @save "$(configs_path)/left_intertwiners_configurations_pcutoff_$(twice(pcutoff)/2).jld2" left_intertwiners_configurations
+        @save "$(configs_path)/inner_intertwiners_configurations_pcutoff_$(twice(pcutoff)/2).jld2" inner_intertwiners_configurations
 
         total_conf = counter_partial_configurations
 
@@ -283,7 +400,7 @@ function vertex_renormalization_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_co
     MC_right_intertwiners_draws = Array{Tuple{Tuple{HalfInt8,HalfInt8},Int8}}(undef, 5, Nmc)
     MC_left_intertwiners_draws = Array{Tuple{Tuple{HalfInt8,HalfInt8},Int8}}(undef, 5, Nmc)
     MC_inner_intertwiners_draws = Array{Tuple{Tuple{HalfInt8,HalfInt8},Int8}}(undef, 5, Nmc)
-    
+
     draw_float_sample = Array{Float64}(undef, 1)
 
     # loop over partial cutoffs
