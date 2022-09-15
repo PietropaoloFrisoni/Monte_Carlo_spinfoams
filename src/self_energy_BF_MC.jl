@@ -104,7 +104,7 @@ function self_energy_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spins_configur
 end
 
 if (!isfile("$(SPINS_CONF_FOLDER)/spins_configurations_cutoff_$(CUTOFF_FLOAT).csv"))
-    printstyled("computing spins configurations for jb=$(JB) up to cutoff=$(CUTOFF)...\n\n"; bold=true, color=:cyan)
+    printstyled("computing spins configurations for jb=$(JB) up to K=$(CUTOFF)...\n\n"; bold=true, color=:cyan)
     @time self_energy_spins_conf(CUTOFF, JB, SPINS_CONF_FOLDER)
     println("done\n")
 end

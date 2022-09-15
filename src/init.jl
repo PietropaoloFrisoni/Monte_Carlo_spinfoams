@@ -6,11 +6,10 @@ if (number_of_workers > available_cpus)
 end 
 
 # initialize library
-function init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER::String, Immirzi::Float64)
+function init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER::String, Immirzi::Float64, Verbosity=VerbosityOff, Accuracy=HighAccuracy, C_parallellization=false)
     isMPI = @ccall SL2Cfoam.clib.sl2cfoam_is_MPI()::Bool
     isMPI && error("MPI version not allowed")
-    conf = SL2Cfoam.Config(VerbosityOff, HighAccuracy, 200, 0)
+    conf = SL2Cfoam.Config(Verbosity, Accuracy, 200, 0)
     SL2Cfoam.cinit(DATA_SL2CFOAM_FOLDER, Immirzi, conf)
-    # disable C library automatic parallelization
-    SL2Cfoam.set_OMP(false)
+    SL2Cfoam.set_OMP(C_parallellization)
 end

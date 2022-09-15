@@ -109,7 +109,7 @@ function self_energy_EPRL_MC(cutoff, jb::HalfInt, Dl::Int, Nmc::Int, vec_number_
 end
 
 if (!isfile("$(SPINS_CONF_FOLDER)/spins_configurations_cutoff_$(CUTOFF_FLOAT).csv"))
-    printstyled("computing spins configurations for jb=$(JB) up to cutoff=$(CUTOFF)...\n\n"; bold=true, color=:cyan)
+    printstyled("computing spins configurations for jb=$(JB) up to K=$(CUTOFF)...\n\n"; bold=true, color=:cyan)
     @time self_energy_spins_conf(CUTOFF, JB, SPINS_CONF_FOLDER)
     println("done\n")
 end

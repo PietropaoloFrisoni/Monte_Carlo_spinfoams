@@ -4,11 +4,10 @@ number_of_workers = nworkers()
 
 printstyled("\nVertex renormalization BF divergence parallelized on $(number_of_workers) worker(s)\n\n"; bold=true, color=:blue)
 
-length(ARGS) < 5 && error("use these arguments: DATA_SL2CFOAM_FOLDER    CUTOFF    JB    STORE_FOLDER    COMPUTE_SPINS_CONFIGURATIONS")
+length(ARGS) < 4 && error("use these arguments: DATA_SL2CFOAM_FOLDER    CUTOFF    JB    STORE_FOLDER")
 
 @eval @everywhere DATA_SL2CFOAM_FOLDER = $(ARGS[1])
 @eval STORE_FOLDER = $(ARGS[4])
-COMPUTE_SPINS_CONFIGURATIONS = parse(Bool, ARGS[5])
 
 printstyled("precompiling packages and source codes...\n\n"; bold=true, color=:cyan)
 @everywhere begin
@@ -28,10 +27,10 @@ printstyled("initializing library...\n\n"; bold=true, color=:cyan)
 @everywhere init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER, 0.123) # fictitious Immirzi 
 
 SPINS_CONF_FOLDER = "$(STORE_FOLDER)/data/vertex_renormalization/jb_$(JB_FLOAT)/spins_configurations"
+mkpath(SPINS_CONF_FOLDER)
 
-if (COMPUTE_SPINS_CONFIGURATIONS)
-    printstyled("computing spins configurations for jb $(JB) up to cutoff $(CUTOFF)...\n\n"; bold=true, color=:cyan)
-    mkpath(SPINS_CONF_FOLDER)
+if (!isfile("$(SPINS_CONF_FOLDER)/spins_configurations_cutoff_$(CUTOFF_FLOAT).csv"))
+    printstyled("computing spins configurations for jb=$(JB) up to K=$(CUTOFF)...\n\n"; bold=true, color=:cyan)
     @time vertex_renormalization_number_spins_configurations(CUTOFF, JB, SPINS_CONF_FOLDER)
     println("done\n")
 end
@@ -238,7 +237,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
 
 end
 
-printstyled("\nStarting computation with jb $(JB) up to cutoff $(CUTOFF)...\n"; bold=true, color=:cyan)
+printstyled("\nStarting computation with jb=$(JB) up to K=$(CUTOFF)...\n"; bold=true, color=:cyan)
 @time ampls = vertex_renormalization_BF(CUTOFF, JB, SPINS_CONF_FOLDER);
 
 printstyled("\nSaving dataframe...\n"; bold=true, color=:cyan)

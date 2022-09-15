@@ -4,14 +4,13 @@ number_of_workers = nworkers()
 
 printstyled("\nSelf energy EPRL divergence parallelized on $(number_of_workers) worker(s)\n\n"; bold=true, color=:blue)
 
-length(ARGS) < 8 && error("use these arguments: DATA_SL2CFOAM_FOLDER    CUTOFF    JB    DL_MIN    DL_MAX     IMMIRZI    STORE_FOLDER    COMPUTE_SPINS_CONFIGURATIONS")
+length(ARGS) < 7 && error("use these arguments: DATA_SL2CFOAM_FOLDER    CUTOFF    JB    DL_MIN    DL_MAX     IMMIRZI    STORE_FOLDER")
 
 @eval @everywhere DATA_SL2CFOAM_FOLDER = $(ARGS[1])
 DL_MIN = parse(Int, ARGS[4])
 DL_MAX = parse(Int, ARGS[5])
 @eval @everywhere IMMIRZI = parse(Float64, $(ARGS[6]))
 @eval STORE_FOLDER = $(ARGS[7])
-COMPUTE_SPINS_CONFIGURATIONS = parse(Bool, ARGS[8])
 
 printstyled("precompiling packages and source codes...\n"; bold=true, color=:cyan)
 @everywhere begin
@@ -32,9 +31,8 @@ printstyled("\ninitializing library with immirzi $(IMMIRZI)...\n"; bold=true, co
 
 SPINS_CONF_FOLDER = "$(STORE_FOLDER)/data/self_energy/jb_$(JB_FLOAT)/spins_configurations"
 
-if (COMPUTE_SPINS_CONFIGURATIONS)
-    printstyled("\ncomputing spins configurations for jb $(JB) up to cutoff $(CUTOFF)...\n\n"; bold=true, color=:cyan)
-    mkpath(SPINS_CONF_FOLDER)
+if (!isfile("$(SPINS_CONF_FOLDER)/spins_configurations_cutoff_$(CUTOFF_FLOAT).csv"))
+    printstyled("computing spins configurations for jb=$(JB) up to K=$(CUTOFF)...\n\n"; bold=true, color=:cyan)
     @time self_energy_spins_conf(CUTOFF, JB, SPINS_CONF_FOLDER)
     println("done\n")
 end
