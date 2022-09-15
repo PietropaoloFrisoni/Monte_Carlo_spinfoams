@@ -29,7 +29,7 @@ CUTOFF = HalfInt(CUTOFF_FLOAT)
 JB_FLOAT = parse(Float64, ARGS[3])
 JB = HalfInt(JB_FLOAT)
 
-printstyled("initializing library with immirzi $(IMMIRZI)...\n\n"; bold=true, color=:cyan)
+printstyled("initializing library with immirzi=$(IMMIRZI)...\n\n"; bold=true, color=:cyan)
 @everywhere init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER, IMMIRZI)
 
 SPINS_CONF_FOLDER = "$(STORE_FOLDER)/data/self_energy/jb_$(JB_FLOAT)/spins_configurations"
@@ -37,7 +37,7 @@ SPINS_MC_INDICES_FOLDER = "$(STORE_FOLDER)/data/self_energy/jb_$(JB_FLOAT)/monte
 STORE_AMPLS_FOLDER = "$(STORE_FOLDER)/data/self_energy/jb_$(JB_FLOAT)/monte_carlo/Nmc_$(MONTE_CARLO_ITERATIONS)/EPRL/immirzi_$(IMMIRZI)"
 mkpath(STORE_AMPLS_FOLDER)
 
-function self_energy_EPRL(cutoff, jb::HalfInt, Dl::Int, Nmc::Int, vec_number_spins_configurations, spins_mc_indices_folder::String, step=half(1))
+function self_energy_EPRL_MC(cutoff, jb::HalfInt, Dl::Int, Nmc::Int, vec_number_spins_configurations, spins_mc_indices_folder::String, step=half(1))
 
     ampls = Float64[]
     stds = Float64[]
@@ -108,6 +108,12 @@ function self_energy_EPRL(cutoff, jb::HalfInt, Dl::Int, Nmc::Int, vec_number_spi
 
 end
 
+if (!isfile("$(SPINS_CONF_FOLDER)/spins_configurations_cutoff_$(CUTOFF_FLOAT).csv"))
+    printstyled("computing spins configurations for jb=$(JB) up to cutoff=$(CUTOFF)...\n\n"; bold=true, color=:cyan)
+    @time self_energy_spins_conf(CUTOFF, JB, SPINS_CONF_FOLDER)
+    println("done\n")
+end
+
 printstyled("loading CSV file with number of spins configurations for jb=$(JB) up to K=$(CUTOFF)...\n"; bold=true, color=:cyan)
 vec_number_spins_configurations = vec(
     Matrix(
@@ -119,30 +125,34 @@ vec_number_spins_configurations = vec(
     ),
 )
 
-number_of_previously_stored_trials = 0
+printstyled("\nstarting computation with Nmc=$(MONTE_CARLO_ITERATIONS), n_trials=$(NUMBER_OF_TRIALS), jb=$(JB), Dl_min=$(DL_MIN), Dl_max=$(DL_MAX), Immirzi=$(IMMIRZI) up to K=$(CUTOFF)...\n"; bold=true, color=:cyan)
 
-if (!OVERWRITE_PREVIOUS_TRIALS)
-    number_of_previously_stored_trials += file_count(STORE_AMPLS_FOLDER)
-    printstyled("\n$(number_of_previously_stored_trials) trials have been previously stored with this configurations, and $(NUMBER_OF_TRIALS) will be added\n"; bold=true, color=:cyan)
-end
+for Dl = DL_MIN:DL_MAX
 
-for current_trial = 1:NUMBER_OF_TRIALS
+    printstyled("\ncurrent Dl = $(Dl)...\n"; bold=true, color=:magenta)
 
-    printstyled("\nsampling $(MONTE_CARLO_ITERATIONS) bulk spins configurations in trial $(current_trial)...\n"; bold=true, color=:bold)
-    mkpath(SPINS_MC_INDICES_FOLDER)
-    @time self_energy_MC_sampling(CUTOFF, MONTE_CARLO_ITERATIONS, JB, SPINS_MC_INDICES_FOLDER)
+    STORE_AMPLS_FOLDER_DL = "$(STORE_AMPLS_FOLDER)/Dl_$(Dl)"
+    mkpath(STORE_AMPLS_FOLDER_DL)
 
-    printstyled("\nstarting computation with Nmc=$(MONTE_CARLO_ITERATIONS), jb=$(JB), Dl_min=$(DL_MIN), Dl_max=$(DL_MAX), Immirzi=$(IMMIRZI) up to K=$(CUTOFF)...\n"; bold=true, color=:cyan)
+    number_of_previously_stored_trials = 0
 
-    for Dl = DL_MIN:DL_MAX
+    if (!OVERWRITE_PREVIOUS_TRIALS)
+        number_of_previously_stored_trials += file_count(STORE_AMPLS_FOLDER_DL)
+        printstyled("\n$(number_of_previously_stored_trials) trials have been previously stored, and $(NUMBER_OF_TRIALS) will be added\n"; bold=true, color=:cyan)
+    end
 
-        printstyled("\ncurrent Dl = $(Dl)...\n"; bold=true, color=:magenta)
-        @time ampls, stds = self_energy_EPRL(CUTOFF, JB, Dl, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_INDICES_FOLDER)
+    for current_trial = 1:NUMBER_OF_TRIALS
+
+        printstyled("\nsampling $(MONTE_CARLO_ITERATIONS) bulk spins configurations in trial $(current_trial)...\n"; bold=true, color=:bold)
+        mkpath(SPINS_MC_INDICES_FOLDER)
+        @time self_energy_MC_sampling(CUTOFF, MONTE_CARLO_ITERATIONS, JB, SPINS_MC_INDICES_FOLDER)
+
+        printstyled("\ncomputing amplitudes...\n"; bold=true, color=:blue)
+        @time ampls, stds = self_energy_EPRL_MC(CUTOFF, JB, Dl, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_INDICES_FOLDER)
 
         printstyled("\nsaving dataframe...\n"; bold=true, color=:cyan)
         df = DataFrame([ampls, stds], ["amp", "std"])
-        STORE_AMPLS_FOLDER_DL = "$(STORE_AMPLS_FOLDER)/Dl_$(Dl)"
-        mkpath(STORE_AMPLS_FOLDER_DL)
+
         CSV.write("$(STORE_AMPLS_FOLDER_DL)/ampls_cutoff_$(CUTOFF)_ib_0.0_trial_$(number_of_previously_stored_trials + current_trial).csv", df)
 
     end

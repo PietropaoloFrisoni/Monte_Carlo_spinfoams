@@ -90,6 +90,12 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
                   (2jviolet + 1) * (2jpurple + 1) * (2jred + 1) * (2jorange + 1) * (2jgrassgreen + 1)
 
 
+            ##################################################################################################################################
+            ### PRE-CONTRACTION
+            ##################################################################################################################################
+
+            # TODO: several optimizations, but for now readability is the priority
+
             # PHASE VERTEX UP
 
             W6j_matrix = Array{Float64}(undef, rBCl[2], rBCr[2])
@@ -183,9 +189,11 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
             #check_size(vertex_right_pre_contracted, v_r.a)
             tensor_contraction!(vertex_right_pre_contracted, v_r.a, W6j_matrix)
 
-            amp = 0.0
+            ##################################################################################################################################
+            ### FINAL INTERTWINER CONTRACTION
+            ##################################################################################################################################
 
-            # FINAL INTERTWINER CONTRACTION
+            amp = 0.0
 
             # after pre-contraction, outer left intertwiners don't exist anymore
 

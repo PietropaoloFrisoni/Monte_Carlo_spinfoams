@@ -20,6 +20,7 @@ macro retrieve_from_process(p, obj, mod=:Main)
   end
 end
 
+# check size of tensor
 @inline function check_size(tensor_pre_contracted, original_tensor)
   if (size(tensor_pre_contracted) != size(original_tensor))
     error("\nThe 2 tensors have different sizes")
