@@ -37,3 +37,6 @@ Manifest.toml
 
 # Folder with Jupyter checkpoints
 *.ipynb_checkpoints
+
+#Folder with ipe diagrams
+diagrams
