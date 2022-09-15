@@ -105,7 +105,8 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
                     rBCl_intertw = from_index_to_intertwiner(rBCl, rBCl_index)
                     W6j_matrix[rBCl_index, rBCr_index] =
                         float(wigner6j(jb, jbrightgreen, rBCl_intertw, jgrassgreen, jred, rBCr_intertw)) *
-                        (-1)^(2jb) * sqrt((2rBCl_intertw + 1) * (2rBCr_intertw + 1))
+                        sqrt((2rBCl_intertw + 1) * (2rBCr_intertw + 1)) *
+                        (-1)^(jb + jbrightgreen + jred - jgrassgreen)
                 end
             end
 
@@ -124,7 +125,8 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
                     rABl_intertw = from_index_to_intertwiner(rABl, rABl_index)
                     W6j_matrix[rABl_index, rABr_index] =
                         float(wigner6j(jb, jpink, rABl_intertw, jblue, jbrightgreen, rABr_intertw)) *
-                        (-1)^(2jb) * sqrt((2rABl_intertw + 1) * (2rABr_intertw + 1))
+                        sqrt((2rABl_intertw + 1) * (2rABr_intertw + 1)) *
+                        (-1)^(jb + jpink + jbrightgreen - jblue)
                 end
             end
 
@@ -143,7 +145,8 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
                     rAEl_intertw = from_index_to_intertwiner(rAEl, rAEl_index)
                     W6j_matrix[rAEl_index, rAEr_index] =
                         float(wigner6j(jb, jbrown, rAEl_intertw, jdarkgreen, jpink, rAEr_intertw)) *
-                        (-1)^(2jb) * sqrt((rAEl_intertw + 1) * (rAEr_intertw + 1))
+                        sqrt((rAEl_intertw + 1) * (rAEr_intertw + 1)) *
+                        (-1)^(jb + jbrown + jpink - jdarkgreen)
                 end
             end
 
@@ -161,7 +164,8 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
                     rbl_intertw = from_index_to_intertwiner(rbl, rbl_index)
                     W6j_matrix[rbl_index, rbr_index] =
                         float(wigner6j(jb, jviolet, rbl_intertw, jpurple, jbrown, rbr_intertw)) *
-                        (-1)^(2jb) * sqrt((rbl_intertw + 1) * (rbr_intertw + 1))
+                        sqrt((rbl_intertw + 1) * (rbr_intertw + 1)) *
+                        (-1)^(jb + jviolet + jred - jorange)
                 end
             end
 
@@ -180,7 +184,8 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
                     rCDl_intertw = from_index_to_intertwiner(rCDl, rCDl_index)
                     W6j_matrix[rCDl_index, rCDr_index] =
                         float(wigner6j(jb, jred, rCDl_intertw, jorange, jviolet, rCDr_intertw)) *
-                        (-1)^(2jb) * sqrt((rCDl_intertw + 1) * (rCDr_intertw + 1))
+                        sqrt((rCDl_intertw + 1) * (rCDr_intertw + 1)) *
+                        (-1)^(jb + jbrown + jviolet - jpurple)
                 end
             end
 
@@ -206,11 +211,11 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
                 rIur_intertw = from_index_to_intertwiner(rIur, rIur_index)
 
                 amp +=
-                    vertex_up_pre_contracted[rBC_index, rIur_index, rIul_index, rAB_index, 1] * (-1)^(jblue + jpurple + rIur_intertw)
-                vertex_left_pre_contracted[rAB_index, rIu_index, rIbl_index, rAE_index, 1] * (-1)^(jdarkgreen + jorange + rIu_intertw)
-                vertex_bottom_left_pre_contracted[rAE_index, rIul_index, rIbr_index, rb_index, 1] * (-1)^(jgrassgreen + jpurple + rIul_intertw)
-                vertex_bottom_right_pre_contracted[rb_index, rIbl_index, rIur_index, rCD_index, 1] * (-1)^(jorange + jblue + rIbl_intertw)
-                vertex_right_pre_contracted[rCD_index, rIbr_index, rIu_index, rBC_index, 1] * (-1)^(jgrassgreen + jdarkgreen + rIbr_intertw)
+                    vertex_up_pre_contracted[rBC_index, rIur_index, rIul_index, rAB_index, 1] * (-1)^(jb + jred + rIur_intertw)
+                vertex_left_pre_contracted[rAB_index, rIu_index, rIbl_index, rAE_index, 1] * (-1)^(jb + jbrightgreen + rIu_intertw)
+                vertex_bottom_left_pre_contracted[rAE_index, rIul_index, rIbr_index, rb_index, 1] * (-1)^(jb + jpink + rIul_intertw)
+                vertex_bottom_right_pre_contracted[rb_index, rIbl_index, rIur_index, rCD_index, 1] * (-1)^(jb + jbrown + rIbl_intertw)
+                vertex_right_pre_contracted[rCD_index, rIbr_index, rIu_index, rBC_index, 1] * (-1)^(jb + jviolet + rIbr_intertw)
 
             end
 
