@@ -38,12 +38,7 @@ function tensor_contraction!(tensor_pre_contracted, original_tensor, W6j_matrix)
   end
 end
 
-#TODO: check mem allocations
-function from_index_to_intertwiner(tuple, index)
-  intertwiner = tuple[1][1] + index - 1
-  if (intertwiner > tuple[1][2])
-    error("intertwiner out of range")
-  else
-    return intertwiner
-  end
+# from index to intertwiner of tuple ((i_min, i_max), i_range)
+@inline function from_index_to_intertwiner(tuple, index)
+  return tuple[1][1] + index - 1
 end
