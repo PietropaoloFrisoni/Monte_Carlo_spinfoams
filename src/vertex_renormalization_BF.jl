@@ -27,7 +27,6 @@ JB = HalfInt(JB_FLOAT)
 printstyled("initializing library...\n\n"; bold=true, color=:cyan)
 @everywhere init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER, 0.123) # fictitious Immirzi 
 
-
 SPINS_CONF_FOLDER = "$(STORE_FOLDER)/data/vertex_renormalization/jb_$(JB_FLOAT)/spins_configurations"
 
 if (COMPUTE_SPINS_CONFIGURATIONS)
@@ -40,66 +39,31 @@ end
 STORE_AMPLS_FOLDER = "$(STORE_FOLDER)/data/vertex_renormalization/jb_$(JB_FLOAT)/exact/BF"
 mkpath(STORE_AMPLS_FOLDER)
 
-#= TODO: this has to be completed and (if necessary) hugely optimized
 function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::String, step=half(1))
 
     ampls = Float64[]
 
     for pcutoff = 0:step:cutoff
 
+        # load bulk spins and intertwiners
         @load "$(spins_conf_folder)/configs_pcutoff_$(twice(pcutoff)/2).jld2" spins_configurations
+
+        @load "$(spins_conf_folder)/right_intertwiners_configurations_pcutoff_$(twice(pcutoff)/2).jld2" right_intertwiners_configurations
+        @load "$(spins_conf_folder)/left_intertwiners_configurations_pcutoff_$(twice(pcutoff)/2).jld2" left_intertwiners_configurations
+        @load "$(spins_conf_folder)/inner_intertwiners_configurations_pcutoff_$(twice(pcutoff)/2).jld2" inner_intertwiners_configurations
 
         if isempty(spins_configurations)
             push!(ampls, 0.0)
             continue
         end
 
-        @time tampl = @sync @distributed (+) for spins in spins_configurations
+        @time tampl = @sync @distributed (+) for spins_index in eachindex(spins_configurations)
 
-        jpink, jblue, jbrightgreen, jbrown, jdarkgreen, jviolet, jpurple, jred, jorange, jgrassgreen = spins
+            jpink, jblue, jbrightgreen, jbrown, jdarkgreen, jviolet, jpurple, jred, jorange, jgrassgreen = spins_configurations[spins_index]
 
-         end
-
-        # load MC bulk spins 
-        @load "$(spins_mc_folder)/MC_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_draws
-
-        # load MC intertwiners
-        @load "$(spins_mc_folder)/MC_right_intertwiners_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_right_intertwiners_draws
-        @load "$(spins_mc_folder)/MC_left_intertwiners_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_left_intertwiners_draws
-        @load "$(spins_mc_folder)/MC_inner_intertwiners_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_inner_intertwiners_draws
-
-        bulk_ampls = SharedArray{Float64}(Nmc)
-
-        @time @sync @distributed for bulk_ampls_index in eachindex(bulk_ampls)
-
-            jpink = MC_draws[1, bulk_ampls_index]
-            jblue = MC_draws[2, bulk_ampls_index]
-            jbrightgreen = MC_draws[3, bulk_ampls_index]
-            jbrown = MC_draws[4, bulk_ampls_index]
-            jdarkgreen = MC_draws[5, bulk_ampls_index]
-            jviolet = MC_draws[6, bulk_ampls_index]
-            jpurple = MC_draws[7, bulk_ampls_index]
-            jred = MC_draws[8, bulk_ampls_index]
-            jorange = MC_draws[9, bulk_ampls_index]
-            jgrassgreen = MC_draws[10, bulk_ampls_index]
-
-            rABr = MC_right_intertwiners_draws[1, bulk_ampls_index]
-            rAEr = MC_right_intertwiners_draws[2, bulk_ampls_index]
-            rbr = MC_right_intertwiners_draws[3, bulk_ampls_index]
-            rCDr = MC_right_intertwiners_draws[4, bulk_ampls_index]
-            rBCr = MC_right_intertwiners_draws[5, bulk_ampls_index]
-
-            rABl = MC_left_intertwiners_draws[1, bulk_ampls_index]
-            rAEl = MC_left_intertwiners_draws[2, bulk_ampls_index]
-            rbl = MC_left_intertwiners_draws[3, bulk_ampls_index]
-            rCDl = MC_left_intertwiners_draws[4, bulk_ampls_index]
-            rBCl = MC_left_intertwiners_draws[5, bulk_ampls_index]
-
-            rIu = MC_inner_intertwiners_draws[1, bulk_ampls_index]
-            rIul = MC_inner_intertwiners_draws[2, bulk_ampls_index]
-            rIbl = MC_inner_intertwiners_draws[3, bulk_ampls_index]
-            rIbr = MC_inner_intertwiners_draws[4, bulk_ampls_index]
-            rIur = MC_inner_intertwiners_draws[5, bulk_ampls_index]
+            rABr, rAEr, rbr, rCDr, rBCr = right_intertwiners_configurations[spins_index]
+            rABl, rAEl, rbl, rCDl, rBCl = left_intertwiners_configurations[spins_index]
+            rIu, rIul, rIbl, rIbr, rIur = inner_intertwiners_configurations[spins_index]
 
             # compute vertex up
             #r_u = ((0, 0), rABr[1], rIul[1], rIur[1], rBCl[1])
@@ -219,6 +183,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
             #check_size(vertex_right_pre_contracted, v_r.a)
             tensor_contraction!(vertex_right_pre_contracted, v_r.a, W6j_matrix)
 
+            amp = 0.0
 
             # FINAL INTERTWINER CONTRACTION
 
@@ -233,7 +198,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
                 rIbr_intertw = from_index_to_intertwiner(rIbr, rIbr_index)
                 rIur_intertw = from_index_to_intertwiner(rIur, rIur_index)
 
-                bulk_ampls[bulk_ampls_index] +=
+                amp +=
                     vertex_up_pre_contracted[rBC_index, rIur_index, rIul_index, rAB_index, 1] * (-1)^(jblue + jpurple + rIur_intertw)
                 vertex_left_pre_contracted[rAB_index, rIu_index, rIbl_index, rAE_index, 1] * (-1)^(jdarkgreen + jorange + rIu_intertw)
                 vertex_bottom_left_pre_contracted[rAE_index, rIul_index, rIbr_index, rb_index, 1] * (-1)^(jgrassgreen + jpurple + rIul_intertw)
@@ -243,17 +208,12 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
             end
 
             # face dims
-            bulk_ampls[bulk_ampls_index] *= dfj * (-1)^(2jpink) * (-1)^(2jblue) * (-1)^(2jbrightgreen) * (-1)^(2jbrown) * (-1)^(2jdarkgreen) *
-                                            (-1)^(2jviolet) * (-1)^(2jpurple) * (-1)^(2jred) * (-1)^(2jorange) * (-1)^(2jgrassgreen)
+            amp *= dfj * (-1)^(2jpink) * (-1)^(2jblue) * (-1)^(2jbrightgreen) * (-1)^(2jbrown) * (-1)^(2jdarkgreen) *
+                   (-1)^(2jviolet) * (-1)^(2jpurple) * (-1)^(2jred) * (-1)^(2jorange) * (-1)^(2jgrassgreen)
+
+            amp
 
         end
-
-        tampl = mean(bulk_ampls)
-
-        # normalize
-        index_cutoff = Int(2 * pcutoff + 1)
-        tnconf = vec_number_spins_configurations[index_cutoff] - vec_number_spins_configurations[index_cutoff-1]
-        tampl *= tnconf
 
         if isempty(ampls)
             ampl = tampl
@@ -261,7 +221,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
             ampl = ampls[end] + tampl
         end
 
-        log("Amplitude at partial cutoff = $pcutoff: $(ampl)")
+        log("Amplitude at partial cutoff = $pcutoff: $(ampl)\n")
         push!(ampls, ampl)
 
     end # partial cutoffs loop
@@ -270,39 +230,11 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
 
 end
 
-printstyled("\nLoading CSV file with number of spins configurations for jb=$(JB) up to K=10...\n"; bold=true, color=:cyan)
-vec_number_spins_configurations = vec(
-    Matrix(
-        DataFrame(
-            CSV.File(
-                "$(SPINS_CONF_FOLDER)/spins_configurations_cutoff_10.0.csv"
-            ),
-        ),
-    ),
-)
+printstyled("\nStarting computation with jb $(JB) up to cutoff $(CUTOFF)...\n"; bold=true, color=:cyan)
+@time ampls = vertex_renormalization_BF(CUTOFF, JB, SPINS_CONF_FOLDER);
 
-number_of_previously_stored_trials = 0
-
-if (!OVERWRITE_PREVIOUS_TRIALS)
-    number_of_previously_stored_trials += file_count(STORE_AMPLS_FOLDER)
-    printstyled("\n$(number_of_previously_stored_trials) trials have been previously stored with this configurations, and $(NUMBER_OF_TRIALS) will be added\n"; bold=true, color=:cyan)
-end
-
-for current_trial = 1:NUMBER_OF_TRIALS
-
-    printstyled("\nsampling $(MONTE_CARLO_ITERATIONS) bulk spins configurations in trial $(current_trial)...\n"; bold=true, color=:bold)
-    mkpath(SPINS_MC_INDICES_FOLDER)
-    @time vertex_renormalization_MC_sampling(CUTOFF, MONTE_CARLO_ITERATIONS, JB, SPINS_MC_INDICES_FOLDER)
-
-    printstyled("\nstarting computation in trial $(current_trial) with Nmc=$(MONTE_CARLO_ITERATIONS), jb=$(JB) up to K=$(CUTOFF)...\n"; bold=true, color=:light_magenta)
-    @time ampls = vertex_renormalization_BF(CUTOFF, JB, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_INDICES_FOLDER)
-
-    printstyled("\nsaving dataframe...\n"; bold=true, color=:cyan)
-    df = DataFrame([ampls], ["amp"])
-    CSV.write("$(STORE_AMPLS_FOLDER)/ampls_cutoff_$(CUTOFF)_ib_0.0_trial_$(number_of_previously_stored_trials + current_trial).csv", df)
-
-end
+printstyled("\nSaving dataframe...\n"; bold=true, color=:cyan)
+df = DataFrame([ampls], ["amp"])
+CSV.write("$(STORE_AMPLS_FOLDER)/ampls_cutoff_$(CUTOFF)_ib_0.0.csv", df)
 
 printstyled("\nCompleted\n\n"; bold=true, color=:blue)
-
-=#

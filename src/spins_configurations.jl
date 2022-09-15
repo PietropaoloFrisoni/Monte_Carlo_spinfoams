@@ -201,7 +201,7 @@ function vertex_renormalization_number_spins_configurations(cutoff, jb::HalfInt,
 
         # generate a list of all spins and intertwiners to compute
         spins_configurations = NTuple{10,HalfInt8}[]
-        
+
         right_intertwiners_configurations = NTuple{5,Tuple{Tuple{HalfInt8,HalfInt8},Int8}}[]
         left_intertwiners_configurations = NTuple{5,Tuple{Tuple{HalfInt8,HalfInt8},Int8}}[]
         inner_intertwiners_configurations = NTuple{5,Tuple{Tuple{HalfInt8,HalfInt8},Int8}}[]
@@ -618,8 +618,6 @@ function vertex_renormalization_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_co
         @save "$(MC_configs_path)/MC_right_intertwiners_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_right_intertwiners_draws
         @save "$(MC_configs_path)/MC_left_intertwiners_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_left_intertwiners_draws
         @save "$(MC_configs_path)/MC_inner_intertwiners_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_inner_intertwiners_draws
-
-
 
     end
 
