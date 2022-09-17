@@ -105,7 +105,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
                     rBCl_intertw = from_index_to_intertwiner(rBCl, rBCl_index)
                     W6j_matrix_up[rBCl_index, rBCr_index] =
                         float(wigner6j(jb, jbrightgreen, rBCl_intertw, jgrassgreen, jred, rBCr_intertw)) *
-                        sqrt((2rBCl_intertw + 1) * (2rBCr_intertw + 1)) * (-1)^(jb + jbrightgreen + jred - jgrassgreen)
+                        (2rBCl_intertw + 1) * (2rBCr_intertw + 1) * (-1)^(jb + jbrightgreen + jred - jgrassgreen)
                 end
             end
 
@@ -129,7 +129,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
                     rABl_intertw = from_index_to_intertwiner(rABl, rABl_index)
                     W6j_matrix_l[rABl_index, rABr_index] =
                         float(wigner6j(jb, jpink, rABl_intertw, jblue, jbrightgreen, rABr_intertw)) *
-                        sqrt((2rABl_intertw + 1) * (2rABr_intertw + 1)) * (-1)^(jb + jpink + jbrightgreen - jblue)
+                        (2rABl_intertw + 1) * (2rABr_intertw + 1) * (-1)^(jb + jpink + jbrightgreen - jblue)
                 end
             end
 
@@ -150,7 +150,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
                     rAEl_intertw = from_index_to_intertwiner(rAEl, rAEl_index)
                     W6j_matrix_bl[rAEl_index, rAEr_index] =
                         float(wigner6j(jb, jbrown, rAEl_intertw, jdarkgreen, jpink, rAEr_intertw)) *
-                        sqrt((2rAEl_intertw + 1) * (2rAEr_intertw + 1)) * (-1)^(jb + jbrown + jpink - jdarkgreen)
+                        (2rAEl_intertw + 1) * (2rAEr_intertw + 1) * (-1)^(jb + jbrown + jpink - jdarkgreen)
                 end
             end
 
@@ -168,7 +168,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
                     rbl_intertw = from_index_to_intertwiner(rbl, rbl_index)
                     W6j_matrix_br[rbl_index, rbr_index] =
                         float(wigner6j(jb, jviolet, rbl_intertw, jpurple, jbrown, rbr_intertw)) *
-                        sqrt((2rbl_intertw + 1) * (2rbr_intertw + 1)) * (-1)^(jb + jbrown + jviolet - jpurple)
+                        (2rbl_intertw + 1) * (2rbr_intertw + 1) * (-1)^(jb + jbrown + jviolet - jpurple)
                 end
             end
 
@@ -187,7 +187,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
                     rCDl_intertw = from_index_to_intertwiner(rCDl, rCDl_index)
                     W6j_matrix_r[rCDl_index, rCDr_index] =
                         float(wigner6j(jb, jred, rCDl_intertw, jorange, jviolet, rCDr_intertw)) *
-                        sqrt((2rCDl_intertw + 1) * (2rCDr_intertw + 1)) * (-1)^(jb + jviolet + jred - jorange)
+                        (2rCDl_intertw + 1) * (2rCDr_intertw + 1) * (-1)^(jb + jviolet + jred - jorange)
                 end
             end
 
