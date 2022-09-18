@@ -39,10 +39,12 @@ mkpath(STORE_AMPLS_FOLDER)
 function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spins_configurations, spins_mc_folder::String, step=half(1))
 
     ampls = Float64[]
+    stds = Float64[]
 
     # case pcutoff = 0
     # TODO: generalize this to take into account integer case
     push!(ampls, 0.0)
+    push!(stds, 0.0)
 
     for pcutoff = step:step:cutoff
 
@@ -122,7 +124,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
                     rBCl_intertw = from_index_to_intertwiner(rBCl, rBCl_index)
                     W6j_matrix[rBCl_index, rBCr_index] =
                         float(wigner6j(jb, jbrightgreen, rBCl_intertw, jgrassgreen, jred, rBCr_intertw)) *
-                        (-1)^(2jb) * sqrt((2rBCl_intertw + 1) * (2rBCr_intertw + 1))
+                        (2rBCl_intertw + 1) * (2rBCr_intertw + 1) * (-1)^(jb + jbrightgreen + jred - jgrassgreen)
                 end
             end
 
@@ -141,7 +143,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
                     rABl_intertw = from_index_to_intertwiner(rABl, rABl_index)
                     W6j_matrix[rABl_index, rABr_index] =
                         float(wigner6j(jb, jpink, rABl_intertw, jblue, jbrightgreen, rABr_intertw)) *
-                        (-1)^(2jb) * sqrt((2rABl_intertw + 1) * (2rABr_intertw + 1))
+                        (2rABl_intertw + 1) * (2rABr_intertw + 1) * (-1)^(jb + jpink + jbrightgreen - jblue)
                 end
             end
 
@@ -160,7 +162,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
                     rAEl_intertw = from_index_to_intertwiner(rAEl, rAEl_index)
                     W6j_matrix[rAEl_index, rAEr_index] =
                         float(wigner6j(jb, jbrown, rAEl_intertw, jdarkgreen, jpink, rAEr_intertw)) *
-                        (-1)^(2jb) * sqrt((rAEl_intertw + 1) * (rAEr_intertw + 1))
+                        (2rAEl_intertw + 1) * (2rAEr_intertw + 1) * (-1)^(jb + jbrown + jpink - jdarkgreen)
                 end
             end
 
@@ -178,7 +180,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
                     rbl_intertw = from_index_to_intertwiner(rbl, rbl_index)
                     W6j_matrix[rbl_index, rbr_index] =
                         float(wigner6j(jb, jviolet, rbl_intertw, jpurple, jbrown, rbr_intertw)) *
-                        (-1)^(2jb) * sqrt((rbl_intertw + 1) * (rbr_intertw + 1))
+                        (2rbl_intertw + 1) * (2rbr_intertw + 1) * (-1)^(jb + jbrown + jviolet - jpurple)
                 end
             end
 
@@ -197,7 +199,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
                     rCDl_intertw = from_index_to_intertwiner(rCDl, rCDl_index)
                     W6j_matrix[rCDl_index, rCDr_index] =
                         float(wigner6j(jb, jred, rCDl_intertw, jorange, jviolet, rCDr_intertw)) *
-                        (-1)^(2jb) * sqrt((rCDl_intertw + 1) * (rCDr_intertw + 1))
+                        (2rCDl_intertw + 1) * (2rCDr_intertw + 1) * (-1)^(jb + jviolet + jred - jorange)
                 end
             end
 
@@ -213,24 +215,17 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
             for rAB_index in 1:rABr[2], rAE_index in 1:rAEr[2], rb_index in 1:rbr[2], rCD_index in 1:rCDr[2], rBC_index in 1:rBCr[2],
                 rIu_index in 1:rIu[2], rIul_index in 1:rIul[2], rIbl_index in 1:rIbl[2], rIbr_index in 1:rIbr[2], rIur_index in 1:rIur[2]
 
-                rIu_intertw = from_index_to_intertwiner(rIu, rIu_index)
-                rIul_intertw = from_index_to_intertwiner(rIul, rIul_index)
-                rIbl_intertw = from_index_to_intertwiner(rIbl, rIbl_index)
-                rIbr_intertw = from_index_to_intertwiner(rIbr, rIbr_index)
-                rIur_intertw = from_index_to_intertwiner(rIur, rIur_index)
-
                 bulk_ampls[bulk_ampls_index] +=
-                    vertex_up_pre_contracted[rBC_index, rIur_index, rIul_index, rAB_index, 1] * (-1)^(jblue + jpurple + rIur_intertw)
-                vertex_left_pre_contracted[rAB_index, rIu_index, rIbl_index, rAE_index, 1] * (-1)^(jdarkgreen + jorange + rIu_intertw)
-                vertex_bottom_left_pre_contracted[rAE_index, rIul_index, rIbr_index, rb_index, 1] * (-1)^(jgrassgreen + jpurple + rIul_intertw)
-                vertex_bottom_right_pre_contracted[rb_index, rIbl_index, rIur_index, rCD_index, 1] * (-1)^(jorange + jblue + rIbl_intertw)
-                vertex_right_pre_contracted[rCD_index, rIbr_index, rIu_index, rBC_index, 1] * (-1)^(jgrassgreen + jdarkgreen + rIbr_intertw)
+                    vertex_up_pre_contracted[rBC_index, rIur_index, rIul_index, rAB_index, 1] *
+                    vertex_left_pre_contracted[rAB_index, rIu_index, rIbl_index, rAE_index, 1] *
+                    vertex_bottom_left_pre_contracted[rAE_index, rIul_index, rIbr_index, rb_index, 1] *
+                    vertex_bottom_right_pre_contracted[rb_index, rIbl_index, rIur_index, rCD_index, 1] *
+                    vertex_right_pre_contracted[rCD_index, rIbr_index, rIu_index, rBC_index, 1]
 
             end
 
             # face dims
-            bulk_ampls[bulk_ampls_index] *= dfj * (-1)^(2jpink) * (-1)^(2jblue) * (-1)^(2jbrightgreen) * (-1)^(2jbrown) * (-1)^(2jdarkgreen) *
-                                            (-1)^(2jviolet) * (-1)^(2jpurple) * (-1)^(2jred) * (-1)^(2jorange) * (-1)^(2jgrassgreen)
+            bulk_ampls[bulk_ampls_index] *= dfj
 
             #= 
             Paranoid check (passed)
@@ -360,23 +355,34 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
 
         tampl = mean(bulk_ampls)
 
+        tampl_var = 0.0
+        for i = 1:Nmc
+            tampl_var += (bulk_ampls[i] - tampl)^2
+        end
+        tampl_var /= (Nmc - 1)
+
         # normalize
         index_cutoff = Int(2 * pcutoff + 1)
         tnconf = vec_number_spins_configurations[index_cutoff] - vec_number_spins_configurations[index_cutoff-1]
         tampl *= tnconf
+        tampl_std = sqrt(tampl_var * (tnconf^2) / Nmc)
 
         if isempty(ampls)
             ampl = tampl
+            std = tampl_std
         else
             ampl = ampls[end] + tampl
+            std = stds[end] + tampl_std
         end
 
         log("Amplitude at partial cutoff = $pcutoff: $(ampl)")
         push!(ampls, ampl)
+        println("Amplitude std at partial cutoff = $pcutoff: $(std)\n")
+        push!(stds, std)
 
     end # partial cutoffs loop
 
-    ampls
+    ampls, stds
 
 end
 
@@ -405,10 +411,10 @@ for current_trial = 1:NUMBER_OF_TRIALS
     @time vertex_renormalization_MC_sampling(CUTOFF, MONTE_CARLO_ITERATIONS, JB, SPINS_MC_INDICES_FOLDER)
 
     printstyled("\nstarting computation in trial $(current_trial) with Nmc=$(MONTE_CARLO_ITERATIONS), jb=$(JB) up to K=$(CUTOFF)...\n"; bold=true, color=:light_magenta)
-    @time ampls = vertex_renormalization_BF(CUTOFF, JB, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_INDICES_FOLDER)
+    @time ampls, stds = vertex_renormalization_BF(CUTOFF, JB, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_INDICES_FOLDER)
 
     printstyled("\nsaving dataframe...\n"; bold=true, color=:cyan)
-    df = DataFrame([ampls], ["amp"])
+    df = DataFrame([ampls, stds], ["amp", "std"])
     CSV.write("$(STORE_AMPLS_FOLDER)/ampls_cutoff_$(CUTOFF)_ib_0.0_trial_$(number_of_previously_stored_trials + current_trial).csv", df)
 
 end
