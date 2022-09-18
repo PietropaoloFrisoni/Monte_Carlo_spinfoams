@@ -393,7 +393,7 @@ end
 
 
 # store Monte Carlo vertex renormalization spins configurations for all partial cutoffs up to cutoff
-function vertex_renormalization_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_configs_path::String, step=half(1))
+function vertex_renormalization_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_configs_path::String, trial::Int, step=half(1))
 
     MC_draws = Array{HalfInt8}(undef, 10, Nmc)
 
@@ -612,12 +612,12 @@ function vertex_renormalization_MC_sampling(cutoff, Nmc::Int, jb::HalfInt, MC_co
         end
 
         # store MC bulk spins 
-        @save "$(MC_configs_path)/MC_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_draws
+        @save "$(MC_configs_path)/MC_draws_pcutoff_$(twice(pcutoff)/2)_trial_$(trial).jld2" MC_draws
 
         # store MC intertwiners
-        @save "$(MC_configs_path)/MC_right_intertwiners_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_right_intertwiners_draws
-        @save "$(MC_configs_path)/MC_left_intertwiners_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_left_intertwiners_draws
-        @save "$(MC_configs_path)/MC_inner_intertwiners_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_inner_intertwiners_draws
+        @save "$(MC_configs_path)/MC_right_intertwiners_draws_pcutoff_$(twice(pcutoff)/2)_trial_$(trial).jld2" MC_right_intertwiners_draws
+        @save "$(MC_configs_path)/MC_left_intertwiners_draws_pcutoff_$(twice(pcutoff)/2)_trial_$(trial).jld2" MC_left_intertwiners_draws
+        @save "$(MC_configs_path)/MC_inner_intertwiners_draws_pcutoff_$(twice(pcutoff)/2)_trial_$(trial).jld2" MC_inner_intertwiners_draws
 
     end
 

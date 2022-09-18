@@ -36,7 +36,7 @@ mkpath(STORE_AMPLS_FOLDER)
 
 
 # TODO: this has to be completed and (if necessary) hugely optimized
-function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spins_configurations, spins_mc_folder::String, step=half(1))
+function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spins_configurations, spins_mc_folder::String, trial::Int, step=half(1))
 
     ampls = Float64[]
     stds = Float64[]
@@ -49,12 +49,12 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
     for pcutoff = step:step:cutoff
 
         # load MC bulk spins 
-        @load "$(spins_mc_folder)/MC_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_draws
+        @load "$(spins_mc_folder)/MC_draws_pcutoff_$(twice(pcutoff)/2)_trial_$(trial).jld2" MC_draws
 
         # load MC intertwiners
-        @load "$(spins_mc_folder)/MC_right_intertwiners_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_right_intertwiners_draws
-        @load "$(spins_mc_folder)/MC_left_intertwiners_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_left_intertwiners_draws
-        @load "$(spins_mc_folder)/MC_inner_intertwiners_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_inner_intertwiners_draws
+        @load "$(spins_mc_folder)/MC_right_intertwiners_draws_pcutoff_$(twice(pcutoff)/2)_trial_$(trial).jld2" MC_right_intertwiners_draws
+        @load "$(spins_mc_folder)/MC_left_intertwiners_draws_pcutoff_$(twice(pcutoff)/2)_trial_$(trial).jld2" MC_left_intertwiners_draws
+        @load "$(spins_mc_folder)/MC_inner_intertwiners_draws_pcutoff_$(twice(pcutoff)/2)_trial_$(trial).jld2" MC_inner_intertwiners_draws
 
         bulk_ampls = SharedArray{Float64}(Nmc)
 
@@ -404,6 +404,7 @@ if (!OVERWRITE_PREVIOUS_TRIALS)
     printstyled("\n$(number_of_previously_stored_trials) trials have been previously stored with this configurations, and $(NUMBER_OF_TRIALS) will be added\n"; bold=true, color=:cyan)
 end
 
+#=
 for current_trial = 1:NUMBER_OF_TRIALS
 
     printstyled("\nsampling $(MONTE_CARLO_ITERATIONS) bulk spins configurations in trial $(current_trial)...\n"; bold=true, color=:bold)
@@ -412,6 +413,25 @@ for current_trial = 1:NUMBER_OF_TRIALS
 
     printstyled("\nstarting computation in trial $(current_trial) with Nmc=$(MONTE_CARLO_ITERATIONS), jb=$(JB) up to K=$(CUTOFF)...\n"; bold=true, color=:light_magenta)
     @time ampls, stds = vertex_renormalization_BF(CUTOFF, JB, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_INDICES_FOLDER)
+
+    printstyled("\nsaving dataframe...\n"; bold=true, color=:cyan)
+    df = DataFrame([ampls, stds], ["amp", "std"])
+    CSV.write("$(STORE_AMPLS_FOLDER)/ampls_cutoff_$(CUTOFF)_ib_0.0_trial_$(number_of_previously_stored_trials + current_trial).csv", df)
+
+end
+=#
+
+printstyled("\nsampling in parallel $(NUMBER_OF_TRIALS) trials, each one with $(MONTE_CARLO_ITERATIONS) bulk spins configurations...\n"; bold=true, color=:bold)
+mkpath(SPINS_MC_INDICES_FOLDER)
+
+@time @sync @distributed for current_trial = 1:NUMBER_OF_TRIALS
+    vertex_renormalization_MC_sampling(CUTOFF, MONTE_CARLO_ITERATIONS, JB, SPINS_MC_INDICES_FOLDER, current_trial)
+end
+
+for current_trial = 1:NUMBER_OF_TRIALS
+
+    printstyled("\nstarting computation in trial $(current_trial) with Nmc=$(MONTE_CARLO_ITERATIONS), jb=$(JB) up to K=$(CUTOFF)...\n"; bold=true, color=:light_magenta)
+    @time ampls, stds = vertex_renormalization_BF(CUTOFF, JB, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_INDICES_FOLDER, current_trial)
 
     printstyled("\nsaving dataframe...\n"; bold=true, color=:cyan)
     df = DataFrame([ampls, stds], ["amp", "std"])
