@@ -42,6 +42,8 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
 
     ampls = Float64[]
 
+    boundary_dim = Int(2jb + 1)
+
     for pcutoff = 0:step:cutoff
 
         # load bulk spins and intertwiners
@@ -93,7 +95,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
             ### PRE-CONTRACTION
             ##################################################################################################################################
 
-            # TODO: several optimizations, but for now readability is the priority
+            # TODO: several optimizations, but readability is the priority
 
             # PHASE VERTEX UP
 
@@ -109,7 +111,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
                 end
             end
 
-            vertex_up_pre_contracted = zeros(rBCr[2], rIur[2], rIul[2], rABr[2], 2)
+            vertex_up_pre_contracted = zeros(rBCr[2], rIur[2], rIul[2], rABr[2], boundary_dim)
             #check_size(vertex_up_pre_contracted, v_u.a)
             tensor_contraction!(vertex_up_pre_contracted, v_u.a, W6j_matrix_up)
 
@@ -127,7 +129,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
                 end
             end
 
-            vertex_left_pre_contracted = zeros(rABr[2], rIu[2], rIbl[2], rAEr[2], 2)
+            vertex_left_pre_contracted = zeros(rABr[2], rIu[2], rIbl[2], rAEr[2], boundary_dim)
             #check_size(vertex_left_pre_contracted, v_l.a)
             tensor_contraction!(vertex_left_pre_contracted, v_l.a, W6j_matrix_l)
 
@@ -148,7 +150,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
                 end
             end
 
-            vertex_bottom_left_pre_contracted = zeros(rAEr[2], rIul[2], rIbr[2], rbr[2], 2)
+            vertex_bottom_left_pre_contracted = zeros(rAEr[2], rIul[2], rIbr[2], rbr[2], boundary_dim)
             tensor_contraction!(vertex_bottom_left_pre_contracted, v_bl.a, W6j_matrix_bl)
 
 
@@ -166,7 +168,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
                 end
             end
 
-            vertex_bottom_right_pre_contracted = zeros(rbr[2], rIbl[2], rIur[2], rCDr[2], 2)
+            vertex_bottom_right_pre_contracted = zeros(rbr[2], rIbl[2], rIur[2], rCDr[2], boundary_dim)
             #check_size(vertex_bottom_right_pre_contracted, v_br.a)
             tensor_contraction!(vertex_bottom_right_pre_contracted, v_br.a, W6j_matrix_br)
 
@@ -185,7 +187,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
                 end
             end
 
-            vertex_right_pre_contracted = zeros(rCDr[2], rIbr[2], rIu[2], rBCr[2], 2)
+            vertex_right_pre_contracted = zeros(rCDr[2], rIbr[2], rIu[2], rBCr[2], boundary_dim)
             #check_size(vertex_right_pre_contracted, v_r.a)
             tensor_contraction!(vertex_right_pre_contracted, v_r.a, W6j_matrix_r)
 
@@ -197,7 +199,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
 
             # after pre-contraction, outer left intertwiners don't exist anymore
 
-            @inbounds  for rAB_index in 1:rABr[2], rAE_index in 1:rAEr[2], rb_index in 1:rbr[2], rCD_index in 1:rCDr[2], rBC_index in 1:rBCr[2],
+            @inbounds for rAB_index in 1:rABr[2], rAE_index in 1:rAEr[2], rb_index in 1:rbr[2], rCD_index in 1:rCDr[2], rBC_index in 1:rBCr[2],
                 rIu_index in 1:rIu[2], rIul_index in 1:rIul[2], rIbl_index in 1:rIbl[2], rIbr_index in 1:rIbr[2], rIur_index in 1:rIur[2]
 
                 rIu_intertw = from_index_to_intertwiner(rIu, rIu_index)
@@ -206,12 +208,12 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
                 rIbr_intertw = from_index_to_intertwiner(rIbr, rIbr_index)
                 rIur_intertw = from_index_to_intertwiner(rIur, rIur_index)
 
-               @inbounds amp +=
+                @inbounds amp +=
                     vertex_up_pre_contracted[rBC_index, rIur_index, rIul_index, rAB_index, 1] * (-1)^(jb + jred + rIur_intertw) *
-                vertex_left_pre_contracted[rAB_index, rIu_index, rIbl_index, rAE_index, 1] * (-1)^(jb + jbrightgreen + rIu_intertw) *
-                vertex_bottom_left_pre_contracted[rAE_index, rIul_index, rIbr_index, rb_index, 1] * (-1)^(jb + jpink + rIul_intertw) *
-                vertex_bottom_right_pre_contracted[rb_index, rIbl_index, rIur_index, rCD_index, 1] * (-1)^(jb + jbrown + rIbl_intertw) *
-                vertex_right_pre_contracted[rCD_index, rIbr_index, rIu_index, rBC_index, 1] * (-1)^(jb + jviolet + rIbr_intertw) 
+                    vertex_left_pre_contracted[rAB_index, rIu_index, rIbl_index, rAE_index, 1] * (-1)^(jb + jbrightgreen + rIu_intertw) *
+                    vertex_bottom_left_pre_contracted[rAE_index, rIul_index, rIbr_index, rb_index, 1] * (-1)^(jb + jpink + rIul_intertw) *
+                    vertex_bottom_right_pre_contracted[rb_index, rIbl_index, rIur_index, rCD_index, 1] * (-1)^(jb + jbrown + rIbl_intertw) *
+                    vertex_right_pre_contracted[rCD_index, rIbr_index, rIu_index, rBC_index, 1] * (-1)^(jb + jviolet + rIbr_intertw)
 
             end
 
