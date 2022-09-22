@@ -37,6 +37,7 @@ function tensor_contraction!(tensor_pre_contracted, original_tensor, W6j_matrix)
     end
 
   end
+
 end
 
 # from index to intertwiner of tuple ((i_min, i_max), i_range)

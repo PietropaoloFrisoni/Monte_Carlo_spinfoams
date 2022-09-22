@@ -48,7 +48,6 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
 
         # load bulk spins and intertwiners
         @load "$(spins_conf_folder)/configs_pcutoff_$(twice(pcutoff)/2).jld2" spins_configurations
-
         @load "$(spins_conf_folder)/right_intertwiners_configurations_pcutoff_$(twice(pcutoff)/2).jld2" right_intertwiners_configurations
         @load "$(spins_conf_folder)/left_intertwiners_configurations_pcutoff_$(twice(pcutoff)/2).jld2" left_intertwiners_configurations
         @load "$(spins_conf_folder)/inner_intertwiners_configurations_pcutoff_$(twice(pcutoff)/2).jld2" inner_intertwiners_configurations
@@ -61,7 +60,6 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
         @time tampl = @sync @distributed (+) for spins_index in eachindex(spins_configurations)
 
             jpink, jblue, jbrightgreen, jbrown, jdarkgreen, jviolet, jpurple, jred, jorange, jgrassgreen = spins_configurations[spins_index]
-
             rABr, rAEr, rbr, rCDr, rBCr = right_intertwiners_configurations[spins_index]
             rABl, rAEl, rbl, rCDl, rBCl = left_intertwiners_configurations[spins_index]
             rIu, rIul, rIbl, rIbr, rIur = inner_intertwiners_configurations[spins_index]
@@ -89,6 +87,8 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
             # face dims
             dfj = (2jpink + 1) * (2jblue + 1) * (2jbrightgreen + 1) * (2jbrown + 1) * (2jdarkgreen + 1) *
                   (2jviolet + 1) * (2jpurple + 1) * (2jred + 1) * (2jorange + 1) * (2jgrassgreen + 1)
+
+            df_phase = (-1)^(2 * (jpink + jblue + jbrightgreen + jbrown + jdarkgreen + jviolet + jpurple + jred + jorange + jgrassgreen))
 
 
             ##################################################################################################################################
@@ -132,9 +132,6 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
             vertex_left_pre_contracted = zeros(rABr[2], rIu[2], rIbl[2], rAEr[2], boundary_dim)
             #check_size(vertex_left_pre_contracted, v_l.a)
             tensor_contraction!(vertex_left_pre_contracted, v_l.a, W6j_matrix_l)
-
-            #println(vertex_left_pre_contracted)
-
 
             # PHASE VERTEX BOTTOM-LEFT
 
@@ -218,7 +215,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
             end
 
             # face dims
-            amp *= dfj #* (-1)^(2jpink + 2jblue + 2jbrightgreen + 2jbrown + 2jdarkgreen + 2jviolet + 2jpurple + 2jred + 2jorange + 2jgrassgreen)
+            amp *= dfj * df_phase
 
             amp
 

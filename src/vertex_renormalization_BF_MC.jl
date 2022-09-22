@@ -46,7 +46,7 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
     push!(ampls, 0.0)
     push!(stds, 0.0)
 
-    boundary_dim = Int(2jb+1)
+    boundary_dim = Int(2jb + 1)
 
     for pcutoff = step:step:cutoff
 
@@ -114,6 +114,8 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
             # face dims
             dfj = (2jpink + 1) * (2jblue + 1) * (2jbrightgreen + 1) * (2jbrown + 1) * (2jdarkgreen + 1) *
                   (2jviolet + 1) * (2jpurple + 1) * (2jred + 1) * (2jorange + 1) * (2jgrassgreen + 1)
+
+            df_phase = (-1)^(2 * (jpink + jblue + jbrightgreen + jbrown + jdarkgreen + jviolet + jpurple + jred + jorange + jgrassgreen))
 
 
             # PHASE VERTEX UP
@@ -224,16 +226,16 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
                 rIur_intertw = from_index_to_intertwiner(rIur, rIur_index)
 
                 @inbounds bulk_ampls[bulk_ampls_index] +=
-                vertex_up_pre_contracted[rBC_index, rIur_index, rIul_index, rAB_index, 1] * (-1)^(jb + jred + rIur_intertw) *
-                vertex_left_pre_contracted[rAB_index, rIu_index, rIbl_index, rAE_index, 1] * (-1)^(jb + jbrightgreen + rIu_intertw) *
-                vertex_bottom_left_pre_contracted[rAE_index, rIul_index, rIbr_index, rb_index, 1] * (-1)^(jb + jpink + rIul_intertw) *
-                vertex_bottom_right_pre_contracted[rb_index, rIbl_index, rIur_index, rCD_index, 1] * (-1)^(jb + jbrown + rIbl_intertw) *
-                vertex_right_pre_contracted[rCD_index, rIbr_index, rIu_index, rBC_index, 1] * (-1)^(jb + jviolet + rIbr_intertw) 
+                    vertex_up_pre_contracted[rBC_index, rIur_index, rIul_index, rAB_index, 1] * (-1)^(jb + jred + rIur_intertw) *
+                    vertex_left_pre_contracted[rAB_index, rIu_index, rIbl_index, rAE_index, 1] * (-1)^(jb + jbrightgreen + rIu_intertw) *
+                    vertex_bottom_left_pre_contracted[rAE_index, rIul_index, rIbr_index, rb_index, 1] * (-1)^(jb + jpink + rIul_intertw) *
+                    vertex_bottom_right_pre_contracted[rb_index, rIbl_index, rIur_index, rCD_index, 1] * (-1)^(jb + jbrown + rIbl_intertw) *
+                    vertex_right_pre_contracted[rCD_index, rIbr_index, rIu_index, rBC_index, 1] * (-1)^(jb + jviolet + rIbr_intertw)
 
             end
 
             # face dims
-            bulk_ampls[bulk_ampls_index] *= dfj
+            bulk_ampls[bulk_ampls_index] *= dfj * df_phase
 
         end
 
