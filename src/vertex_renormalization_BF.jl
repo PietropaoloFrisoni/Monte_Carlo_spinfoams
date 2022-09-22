@@ -95,8 +95,6 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, spins_conf_folder::Strin
             ### PRE-CONTRACTION
             ##################################################################################################################################
 
-            # TODO: several optimizations, but readability is the priority
-
             # PHASE VERTEX UP
 
             W6j_matrix_up = Array{Float64}(undef, rBCl[2], rBCr[2])

@@ -2,15 +2,18 @@ using Distributed
 
 number_of_workers = nworkers()
 
-printstyled("\nVertex renormalization BF monte carlo divergence parallelized on $(number_of_workers) worker(s)\n\n"; bold=true, color=:blue)
+printstyled("\nVertex renormalization EPRL monte carlo divergence parallelized on $(number_of_workers) worker(s)\n\n"; bold=true, color=:blue)
 
-length(ARGS) < 7 && error("use these arguments: DATA_SL2CFOAM_FOLDER    CUTOFF    JB    STORE_FOLDER    MONTE_CARLO_ITERATIONS    NUMBER_OF_TRIALS    OVERWRITE_PREVIOUS_TRIALS")
+length(ARGS) < 10 && error("use these arguments: DATA_SL2CFOAM_FOLDER    CUTOFF    JB    DL_MIN    DL_MAX     IMMIRZI    STORE_FOLDER    MONTE_CARLO_ITERATIONS    NUMBER_OF_TRIALS    OVERWRITE_PREVIOUS_TRIALS")
 
 @eval @everywhere DATA_SL2CFOAM_FOLDER = $(ARGS[1])
-@eval STORE_FOLDER = $(ARGS[4])
-MONTE_CARLO_ITERATIONS = parse(Int, ARGS[5])
-NUMBER_OF_TRIALS = parse(Int, ARGS[6])
-OVERWRITE_PREVIOUS_TRIALS = parse(Bool, ARGS[7])
+DL_MIN = parse(Int, ARGS[4])
+DL_MAX = parse(Int, ARGS[5])
+@eval @everywhere IMMIRZI = parse(Float64, $(ARGS[6]))
+@eval STORE_FOLDER = $(ARGS[7])
+MONTE_CARLO_ITERATIONS = parse(Int, ARGS[8])
+NUMBER_OF_TRIALS = parse(Int, ARGS[9])
+OVERWRITE_PREVIOUS_TRIALS = parse(Bool, ARGS[10])
 
 printstyled("precompiling packages and source codes...\n\n"; bold=true, color=:cyan)
 @everywhere begin
@@ -26,19 +29,21 @@ CUTOFF = HalfInt(CUTOFF_FLOAT)
 JB_FLOAT = parse(Float64, ARGS[3])
 JB = HalfInt(JB_FLOAT)
 
-printstyled("initializing library...\n\n"; bold=true, color=:cyan)
-@everywhere init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER, 0.123) # fictitious Immirzi 
+printstyled("initializing library with immirzi=$(IMMIRZI)...\n\n"; bold=true, color=:cyan)
+@everywhere init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER, IMMIRZI)
 
 SPINS_CONF_FOLDER = "$(STORE_FOLDER)/data/vertex_renormalization/jb_$(JB_FLOAT)/spins_configurations"
 SPINS_MC_INDICES_FOLDER = "$(STORE_FOLDER)/data/vertex_renormalization/jb_$(JB_FLOAT)/monte_carlo/Nmc_$(MONTE_CARLO_ITERATIONS)/spins_indices"
-STORE_AMPLS_FOLDER = "$(STORE_FOLDER)/data/vertex_renormalization/jb_$(JB_FLOAT)/monte_carlo/Nmc_$(MONTE_CARLO_ITERATIONS)/BF"
+STORE_AMPLS_FOLDER = "$(STORE_FOLDER)/data/vertex_renormalization/jb_$(JB_FLOAT)/monte_carlo/Nmc_$(MONTE_CARLO_ITERATIONS)/EPRL/immirzi_$(IMMIRZI)"
 mkpath(STORE_AMPLS_FOLDER)
 
 
-function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spins_configurations, spins_mc_folder::String, trial::Int, step=half(1))
+function vertex_renormalization_EPRL(cutoff, jb::HalfInt, Dl::Int, Nmc::Int, vec_number_spins_configurations, spins_mc_folder::String, trial::Int, step=half(1))
 
     ampls = Float64[]
     stds = Float64[]
+
+    result_return = (ret=true, store=false, store_batches=false)
 
     # case pcutoff = 0
     # TODO: generalize this to take into account integer case
@@ -92,23 +97,23 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
 
             # compute vertex up
             #r_u = ((0, 0), rABr[1], rIul[1], rIur[1], rBCl[1])
-            v_u = vertex_BF_compute([jb, jb, jb, jb, jpink, jblue, jbrightgreen, jpurple, jgrassgreen, jred])
+            v_u = vertex_compute([jb, jb, jb, jb, jpink, jblue, jbrightgreen, jpurple, jgrassgreen, jred], Dl; result=result_return)
 
             # compute vertex left
             #r_l = ((0, 0), rAEr[1], rIbl[1], rIu[1], rABl[1])
-            v_l = vertex_BF_compute([jb, jb, jb, jb, jbrown, jdarkgreen, jpink, jorange, jblue, jbrightgreen])
+            v_l = vertex_compute([jb, jb, jb, jb, jbrown, jdarkgreen, jpink, jorange, jblue, jbrightgreen], Dl; result=result_return)
 
             # compute vertex bottom-left
             #r_bl = ((0, 0), rbr[1], rIbr[1], rIul[1], rAEl[1])
-            v_bl = vertex_BF_compute([jb, jb, jb, jb, jviolet, jpurple, jbrown, jgrassgreen, jdarkgreen, jpink])
+            v_bl = vertex_compute([jb, jb, jb, jb, jviolet, jpurple, jbrown, jgrassgreen, jdarkgreen, jpink], Dl; result=result_return)
 
             # compute vertex bottom-right
             #r_br = ((0, 0), rCDr[1], rIur[1], rIbl[1], rbl[1])
-            v_br = vertex_BF_compute([jb, jb, jb, jb, jred, jorange, jviolet, jblue, jpurple, jbrown])
+            v_br = vertex_compute([jb, jb, jb, jb, jred, jorange, jviolet, jblue, jpurple, jbrown], Dl; result=result_return)
 
             # compute vertex right
             #r_r = ((0, 0), rBCr[1], rIu[1], rIbr[1], rCDl[1])
-            v_r = vertex_BF_compute([jb, jb, jb, jb, jbrightgreen, jgrassgreen, jred, jdarkgreen, jorange, jviolet])
+            v_r = vertex_compute([jb, jb, jb, jb, jbrightgreen, jgrassgreen, jred, jdarkgreen, jorange, jviolet], Dl; result=result_return)
 
             # face dims
             dfj = (2jpink + 1) * (2jblue + 1) * (2jbrightgreen + 1) * (2jbrown + 1) * (2jdarkgreen + 1) *
@@ -277,23 +282,16 @@ if (!isfile("$(SPINS_CONF_FOLDER)/spins_configurations_cutoff_$(CUTOFF_FLOAT).cs
     println("done\n")
 end
 
-printstyled("\nLoading CSV file with number of spins configurations for jb=$(JB) up to K=10...\n"; bold=true, color=:cyan)
+printstyled("loading CSV file with number of spins configurations for jb=$(JB) up to K=$(CUTOFF)...\n"; bold=true, color=:cyan)
 vec_number_spins_configurations = vec(
     Matrix(
         DataFrame(
             CSV.File(
-                "$(SPINS_CONF_FOLDER)/spins_configurations_cutoff_10.0.csv"
+                "$(SPINS_CONF_FOLDER)/spins_configurations_cutoff_$(CUTOFF_FLOAT).csv"
             ),
         ),
     ),
 )
-
-number_of_previously_stored_trials = 0
-
-if (!OVERWRITE_PREVIOUS_TRIALS)
-    number_of_previously_stored_trials += file_count(STORE_AMPLS_FOLDER)
-    printstyled("\n$(number_of_previously_stored_trials) trials have been previously stored with this configurations, and $(NUMBER_OF_TRIALS) will be added\n"; bold=true, color=:cyan)
-end
 
 printstyled("\nsampling in parallel $(NUMBER_OF_TRIALS) trials, each one with $(MONTE_CARLO_ITERATIONS) bulk spins configurations...\n"; bold=true, color=:bold)
 mkpath(SPINS_MC_INDICES_FOLDER)
@@ -302,14 +300,31 @@ mkpath(SPINS_MC_INDICES_FOLDER)
     vertex_renormalization_MC_sampling(CUTOFF, MONTE_CARLO_ITERATIONS, JB, SPINS_MC_INDICES_FOLDER, current_trial)
 end
 
-for current_trial = 1:NUMBER_OF_TRIALS
+for Dl = DL_MIN:DL_MAX
 
-    printstyled("\nstarting computation in trial $(current_trial) with Nmc=$(MONTE_CARLO_ITERATIONS), jb=$(JB) up to K=$(CUTOFF)...\n"; bold=true, color=:light_magenta)
-    @time ampls, stds = vertex_renormalization_BF(CUTOFF, JB, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_INDICES_FOLDER, current_trial)
+    printstyled("\ncurrent Dl = $(Dl)...\n"; bold=true, color=:magenta)
 
-    printstyled("\nsaving dataframe...\n"; bold=true, color=:cyan)
-    df = DataFrame([ampls, stds], ["amp", "std"])
-    CSV.write("$(STORE_AMPLS_FOLDER)/ampls_cutoff_$(CUTOFF)_ib_0.0_trial_$(number_of_previously_stored_trials + current_trial).csv", df)
+    STORE_AMPLS_FOLDER_DL = "$(STORE_AMPLS_FOLDER)/Dl_$(Dl)"
+    mkpath(STORE_AMPLS_FOLDER_DL)
+
+    number_of_previously_stored_trials = 0
+
+    if (!OVERWRITE_PREVIOUS_TRIALS)
+        number_of_previously_stored_trials += file_count(STORE_AMPLS_FOLDER_DL)
+        printstyled("\n$(number_of_previously_stored_trials) trials have been previously stored, and $(NUMBER_OF_TRIALS) will be added\n"; bold=true, color=:cyan)
+    end
+
+    for current_trial = 1:NUMBER_OF_TRIALS
+
+        printstyled("\ncomputing amplitudes in trial $(current_trial)...\n"; bold=true, color=:blue)
+        @time ampls, stds = vertex_renormalization_EPRL(CUTOFF, JB, Dl, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_INDICES_FOLDER, current_trial)
+
+        printstyled("\nsaving dataframe...\n"; bold=true, color=:cyan)
+        df = DataFrame([ampls, stds], ["amp", "std"])
+
+        CSV.write("$(STORE_AMPLS_FOLDER_DL)/ampls_cutoff_$(CUTOFF)_ib_0.0_trial_$(number_of_previously_stored_trials + current_trial).csv", df)
+
+    end
 
 end
 
