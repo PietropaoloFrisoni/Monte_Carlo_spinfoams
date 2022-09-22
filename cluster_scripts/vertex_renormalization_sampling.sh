@@ -6,9 +6,8 @@
 #SBATCH --mem=0
 #SBATCH --time=2-00:00:00
 #SBATCH --job-name=vertex_renormalization
-#SBATCH --output=#SBATCH --job-name=vertex_renormalization.log
-#SBATCH --error=#SBATCH --job-name=vertex_renormalization.err
-
+#SBATCH --output=vertex_renormalization.log
+#SBATCH --error=vertex_renormalization.err
 
 # folders
 
