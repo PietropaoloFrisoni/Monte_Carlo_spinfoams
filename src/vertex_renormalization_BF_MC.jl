@@ -25,6 +25,7 @@ CUTOFF = HalfInt(CUTOFF_FLOAT)
 
 JB_FLOAT = parse(Float64, ARGS[3])
 JB = HalfInt(JB_FLOAT)
+IB = 2
 
 printstyled("initializing library...\n\n"; bold=true, color=:cyan)
 @everywhere init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER, 0.123) # fictitious Immirzi 
@@ -225,17 +226,16 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
                 rIur_intertw = from_index_to_intertwiner(rIur, rIur_index)
 
                 @inbounds bulk_ampls[bulk_ampls_index] +=
-                    vertex_up_pre_contracted[rBC_index, rIur_index, rIul_index, rAB_index, 1] * (-1)^(jb + jred + rIur_intertw) *
-                    vertex_left_pre_contracted[rAB_index, rIu_index, rIbl_index, rAE_index, 1] * (-1)^(jb + jbrightgreen + rIu_intertw) *
-                    vertex_bottom_left_pre_contracted[rAE_index, rIul_index, rIbr_index, rb_index, 1] * (-1)^(jb + jpink + rIul_intertw) *
-                    vertex_bottom_right_pre_contracted[rb_index, rIbl_index, rIur_index, rCD_index, 1] * (-1)^(jb + jbrown + rIbl_intertw) *
-                    vertex_right_pre_contracted[rCD_index, rIbr_index, rIu_index, rBC_index, 1] * (-1)^(jb + jviolet + rIbr_intertw)
+                    vertex_up_pre_contracted[rBC_index, rIur_index, rIul_index, rAB_index, IB] * (-1)^(jb + jred + rIur_intertw) *
+                    vertex_left_pre_contracted[rAB_index, rIu_index, rIbl_index, rAE_index, IB] * (-1)^(jb + jbrightgreen + rIu_intertw) *
+                    vertex_bottom_left_pre_contracted[rAE_index, rIul_index, rIbr_index, rb_index, IB] * (-1)^(jb + jpink + rIul_intertw) *
+                    vertex_bottom_right_pre_contracted[rb_index, rIbl_index, rIur_index, rCD_index, IB] * (-1)^(jb + jbrown + rIbl_intertw) *
+                    vertex_right_pre_contracted[rCD_index, rIbr_index, rIu_index, rBC_index, IB] * (-1)^(jb + jviolet + rIbr_intertw)
 
             end
 
             # face dims
             bulk_ampls[bulk_ampls_index] *= dfj * df_phase
-
         end
 
         tampl = mean(bulk_ampls)
