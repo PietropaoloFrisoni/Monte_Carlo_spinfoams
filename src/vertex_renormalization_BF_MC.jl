@@ -25,7 +25,7 @@ CUTOFF = HalfInt(CUTOFF_FLOAT)
 
 JB_FLOAT = parse(Float64, ARGS[3])
 JB = HalfInt(JB_FLOAT)
-IB = 2
+IB = 1
 
 printstyled("initializing library...\n\n"; bold=true, color=:cyan)
 @everywhere init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER, 0.123) # fictitious Immirzi 
