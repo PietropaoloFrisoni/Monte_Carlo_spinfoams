@@ -36,21 +36,29 @@ mkpath(STORE_AMPLS_FOLDER)
 
 function self_energy_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spins_configurations, spins_mc_folder::String, step=half(1))
 
-    ampls = Float64[]
-    stds = Float64[]
+    total_number_of_ampls = Int(2 * cutoff + 1)
+    boundary_dim = Int(2 * jb + 1)
+
+    # vector with the weights on internal faces
+    # each internal face with spin j has dimension (2j+1)^(weight)
+    face_weights_vec = [1.0, 1 / 6, 0.0, -1 / 6]
+    number_of_weights = size(face_weights_vec)[1]
+
+    # tensor with amplitudes and stds
+    ampls_tensor = zeros(total_number_of_ampls, number_of_weights, boundary_dim)
+    stds_tensor = zeros(total_number_of_ampls, number_of_weights, boundary_dim)
 
     # case pcutoff = 0
-    # TODO: generalize this to take into account integer case
-    push!(ampls, 0.0)
-    push!(stds, 0.0)
-
+    # TODO: generalize to take into account integer boundary spin case
     for pcutoff = step:step:cutoff
+
+        index_cutoff = Int(2 * pcutoff + 1)
 
         @load "$(spins_mc_folder)/MC_draws_pcutoff_$(twice(pcutoff)/2).jld2" MC_draws
 
-        bulk_ampls = SharedArray{Float64}(Nmc)
+        bulk_ampls = SharedArray{Float64}(Nmc, number_of_weights, boundary_dim)
 
-        @time @sync @distributed for bulk_ampls_index in eachindex(bulk_ampls)
+        @time @sync @distributed for bulk_ampls_index = 1:Nmc
 
             j23 = MC_draws[1, bulk_ampls_index]
             j24 = MC_draws[2, bulk_ampls_index]
@@ -58,48 +66,62 @@ function self_energy_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spins_configur
             j34 = MC_draws[4, bulk_ampls_index]
             j35 = MC_draws[5, bulk_ampls_index]
             j45 = MC_draws[6, bulk_ampls_index]
-            
+
             # compute vertex
             v = vertex_BF_compute([jb, jb, jb, jb, j23, j24, j25, j34, j35, j45])
 
-            # face dims
+            # face base dims
             dfj = (2j23 + 1) * (2j24 + 1) * (2j25 + 1) * (2j34 + 1) * (2j35 + 1) * (2j45 + 1)
 
-            # contract
-            bulk_ampls[bulk_ampls_index] = dfj * dot(v.a[:, :, :, :, 1], v.a[:, :, :, :, 1])
+            for weight_index = 1:number_of_weights
+
+                weight = face_weights_vec[weight_index]
+
+                for ib_index = 1:boundary_dim
+
+                    # contract
+                    bulk_ampls[bulk_ampls_index, weight_index, ib_index] = dfj^(weight) * dot(v.a[:, :, :, :, ib_index], v.a[:, :, :, :, ib_index])
+
+                end
+
+            end
 
         end
 
-        tampl = mean(bulk_ampls)
+        # volume normalization factor
+        total_number_conf = vec_number_spins_configurations[index_cutoff] - vec_number_spins_configurations[index_cutoff-1]
 
-        tampl_var = 0.0
-        for i = 1:Nmc
-            tampl_var += (bulk_ampls[i] - tampl)^2
+        for weight_index = 1:number_of_weights
+
+            for ib_index = 1:boundary_dim
+
+                tampl = mean(bulk_ampls[:, weight_index, ib_index])
+
+                tampl_var = 0.0
+                for n = 1:Nmc
+                    tampl_var += (bulk_ampls[n, weight_index, ib_index] - tampl)^2
+                end
+                tampl_var /= (Nmc - 1)
+
+                tampl *= total_number_conf
+                tampl_std = sqrt(tampl_var * (total_number_conf^2) / Nmc)
+
+                ampls_tensor[index_cutoff, weight_index, ib_index] = ampls_tensor[index_cutoff-1, weight_index, ib_index] + tampl
+                stds_tensor[index_cutoff, weight_index, ib_index] = stds_tensor[index_cutoff-1, weight_index, ib_index] + tampl_std
+
+            end
+
         end
-        tampl_var /= (Nmc - 1)
 
-        # normalize
-        index_cutoff = Int(2 * pcutoff + 1)
-        tnconf = vec_number_spins_configurations[index_cutoff] - vec_number_spins_configurations[index_cutoff-1]
-        tampl *= tnconf
-        tampl_std = sqrt(tampl_var * (tnconf^2) / Nmc)
-
-        if isempty(ampls)
-            ampl = tampl
-            std = tampl_std
-        else
-            ampl = ampls[end] + tampl
-            std = stds[end] + tampl_std
-        end
-
-        log("Amplitude at partial cutoff = $pcutoff: $(ampl)")
-        push!(ampls, ampl)
-        println("Amplitude std at partial cutoff = $pcutoff: $(std)\n")
-        push!(stds, std)
+        log("\nAt partial cutoff = $pcutoff the ampls matrix is:\n")
+        display(ampls_tensor[index_cutoff, :, :])
+        println("\nwhile std matrix is:\n")
+        display(stds_tensor[index_cutoff, :, :])
+        println("\n")
 
     end # partial cutoffs loop
 
-    ampls, stds
+    ampls_tensor, stds_tensor
 
 end
 
@@ -134,11 +156,11 @@ for current_trial = 1:NUMBER_OF_TRIALS
     @time self_energy_MC_sampling(CUTOFF, MONTE_CARLO_ITERATIONS, JB, SPINS_MC_INDICES_FOLDER)
 
     printstyled("\nstarting computation in trial $(current_trial) with Nmc=$(MONTE_CARLO_ITERATIONS), jb=$(JB) up to K=$(CUTOFF)...\n"; bold=true, color=:light_magenta)
-    @time ampls, stds = self_energy_BF(CUTOFF, JB, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_INDICES_FOLDER)
+    @time ampls_tensor, stds_tensor = self_energy_BF(CUTOFF, JB, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_INDICES_FOLDER)
 
-    printstyled("\nsaving dataframe...\n"; bold=true, color=:cyan)
-    df = DataFrame([ampls, stds], ["amp", "std"])
-    CSV.write("$(STORE_AMPLS_FOLDER)/ampls_cutoff_$(CUTOFF)_ib_0.0_trial_$(number_of_previously_stored_trials + current_trial).csv", df)
+    #printstyled("\nsaving dataframe...\n"; bold=true, color=:cyan)
+    #df = DataFrame([ampls, stds], ["amp", "std"])
+    #CSV.write("$(STORE_AMPLS_FOLDER)/ampls_cutoff_$(CUTOFF)_ib_0.0_trial_$(number_of_previously_stored_trials + current_trial).csv", df)
 
 end
 
