@@ -4,7 +4,7 @@ number_of_workers = nworkers()
 
 printstyled("\nVertex renormalization BF monte carlo divergence parallelized on $(number_of_workers) worker(s)\n\n"; bold=true, color=:blue)
 
-length(ARGS) < 7 && error("use these arguments: DATA_SL2CFOAM_FOLDER    CUTOFF    JB    STORE_FOLDER    MONTE_CARLO_ITERATIONS    NUMBER_OF_TRIALS")
+length(ARGS) < 6 && error("use these arguments: DATA_SL2CFOAM_FOLDER    CUTOFF    JB    STORE_FOLDER    MONTE_CARLO_ITERATIONS    NUMBER_OF_TRIALS")
 
 @eval @everywhere DATA_SL2CFOAM_FOLDER = $(ARGS[1])
 @eval STORE_FOLDER = $(ARGS[4])
@@ -62,17 +62,6 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
         @load "$(spins_mc_folder)/MC_inner_intertwiners_draws_pcutoff_$(twice(pcutoff)/2)_trial_$(trial).jld2" MC_inner_intertwiners_draws
 
         bulk_ampls = SharedArray{Float64}(Nmc, number_of_weights, boundary_dim)
-
-        #=
-        for n = 1:Nmc
-            for weight_index = 1:number_of_weights
-                for ib_index = 1:boundary_dim
-                    bulk_ampls[n, weight_index, ib_index] = 0.0
-                end
-            end
-        end
-        =#
-
         bulk_ampls[:, :, :] .= 0.0
 
         @time @sync @distributed for bulk_ampls_index = 1:Nmc
@@ -111,19 +100,19 @@ function vertex_renormalization_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spi
             v_u = vertex_BF_compute([jb, jb, jb, jb, jpink, jblue, jbrightgreen, jpurple, jgrassgreen, jred])
 
             # compute vertex left
-            #r_l = ((0, 0), rAEr[1], rIbl[1], rIu[1], rABl[1])
+            #r_l = ((0, 2jb), rAEr[1], rIbl[1], rIu[1], rABl[1])
             v_l = vertex_BF_compute([jb, jb, jb, jb, jbrown, jdarkgreen, jpink, jorange, jblue, jbrightgreen])
 
             # compute vertex bottom-left
-            #r_bl = ((0, 0), rbr[1], rIbr[1], rIul[1], rAEl[1])
+            #r_bl = ((0, 2jb), rbr[1], rIbr[1], rIul[1], rAEl[1])
             v_bl = vertex_BF_compute([jb, jb, jb, jb, jviolet, jpurple, jbrown, jgrassgreen, jdarkgreen, jpink])
 
             # compute vertex bottom-right
-            #r_br = ((0, 0), rCDr[1], rIur[1], rIbl[1], rbl[1])
+            #r_br = ((0, 2jb), rCDr[1], rIur[1], rIbl[1], rbl[1])
             v_br = vertex_BF_compute([jb, jb, jb, jb, jred, jorange, jviolet, jblue, jpurple, jbrown])
 
             # compute vertex right
-            #r_r = ((0, 0), rBCr[1], rIu[1], rIbr[1], rCDl[1])
+            #r_r = ((0, 2jb), rBCr[1], rIu[1], rIbr[1], rCDl[1])
             v_r = vertex_BF_compute([jb, jb, jb, jb, jbrightgreen, jgrassgreen, jred, jdarkgreen, jorange, jviolet])
 
             # face base dims
