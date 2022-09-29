@@ -72,15 +72,13 @@ function self_energy_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spins_configur
             # face base dims
             dfj = (2j23 + 1) * (2j24 + 1) * (2j25 + 1) * (2j34 + 1) * (2j35 + 1) * (2j45 + 1)
 
+            # contract
             for weight_index = 1:number_of_weights
 
                 weight = face_weights_vec[weight_index]
 
                 for ib_index = 1:boundary_dim
-
-                    # contract
                     bulk_ampls[bulk_ampls_index, weight_index, ib_index] = dfj^(weight) * dot(v.a[:, :, :, :, ib_index], v.a[:, :, :, :, ib_index])
-
                 end
 
             end
