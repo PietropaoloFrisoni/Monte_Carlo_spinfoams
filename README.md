@@ -19,7 +19,7 @@ where [N-1] is the number of workers. The `ARGS` parameter depends on the specif
 ### Example: Self energy EPRL with monte carlo sampling
 
 ```
-ARGS = DATA_SL2CFOAM_FOLDER    CUTOFF    JB    DL_MIN    DL_MAX     IMMIRZI    STORE_FOLDER    MONTE_CARLO_ITERATIONS    NUMBER_OF_TRIALS    OVERWRITE_PREVIOUS_TRIALS
+ARGS = DATA_SL2CFOAM_FOLDER    CUTOFF    JB    DL_MIN    DL_MAX     IMMIRZI    STORE_FOLDER    MONTE_CARLO_ITERATIONS    NUMBER_OF_TRIALS
 ```
 
 where:
@@ -42,4 +42,6 @@ where:
 
 - `NUMBER_OF_TRIALS`: number of trials
 
-- `OVERWRITE_PREVIOUS_TRIALS`: if `true` overwrites previous trials, if `false` the new trials are stored along with previous ones
+Additionally, you can specify the weights $\mu_1, \mu_2 \dots \mu_n$ on bulk faces *inside* the code script, with the vector `FACE_WEIGHTS_VEC`.
+
+Each bulk face with spin $j$ has dimension $(2j+1)^{\mu}$, and the code computes all amplitudes with provided weights.
