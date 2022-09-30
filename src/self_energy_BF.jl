@@ -5,6 +5,7 @@ number_of_workers = nworkers()
 printstyled("\nSelf energy BF divergence parallelized on $(number_of_workers) worker(s)\n\n"; bold=true, color=:blue)
 
 length(ARGS) < 4 && error("use these arguments: DATA_SL2CFOAM_FOLDER    CUTOFF    JB    STORE_FOLDER")
+
 @eval @everywhere DATA_SL2CFOAM_FOLDER = $(ARGS[1])
 @eval STORE_FOLDER = $(ARGS[4])
 
@@ -59,11 +60,7 @@ function self_energy_BF(cutoff, jb::HalfInt, spins_conf_folder::String, face_wei
         number_of_spins_configs = size(spins_configurations)[1]
 
         if isempty(spins_configurations)
-            for weight_index = 1:number_of_weights
-                for ib_index = 1:boundary_dim
-                    ampls_tensor[index_pcutoff, weight_index, ib_index] = 0.0
-                end
-            end
+            ampls_tensor[index_pcutoff, :, :] .= 0.0
             continue
         end
 
@@ -110,20 +107,27 @@ total_number_of_ampls = Int(2 * CUTOFF_FLOAT + 1)
 boundary_dim = Int(2 * JB + 1)
 number_of_weights = size(FACE_WEIGHTS_VEC)[1]
 
-printstyled("\nStarting computation with jb=$(JB) up to K=$(CUTOFF)...\n\n"; bold=true, color=:cyan)
+printstyled("\nstarting computation with jb=$(JB) up to K=$(CUTOFF)...\n\n"; bold=true, color=:cyan)
 @time ampls_tensor = self_energy_BF(CUTOFF, JB, SPINS_CONF_FOLDER, FACE_WEIGHTS_VEC);
 
 printstyled("\nsaving dataframe...\n"; bold=true, color=:cyan)
 
 for weight_index = 1:number_of_weights
+
     weight = round(FACE_WEIGHTS_VEC[weight_index], digits=3)
+
     for ib_index = 1:boundary_dim
+
         STORE_AMPLS_FINAL_FOLDER = "$(STORE_AMPLS_FOLDER)/weight_$(weight)/ib_$(ib_index-1)"
         mkpath(STORE_AMPLS_FINAL_FOLDER)
+
         ampls = ampls_tensor[:, weight_index, ib_index]
         df = DataFrame([ampls], ["amp"])
+
         CSV.write("$(STORE_AMPLS_FINAL_FOLDER)/ampls_cutoff_$(CUTOFF).csv", df)
+
     end
+    
 end
 
 printstyled("\nCompleted\n\n"; bold=true, color=:blue)

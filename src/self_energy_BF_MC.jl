@@ -47,7 +47,7 @@ function self_energy_BF(cutoff, jb::HalfInt, Nmc::Int, vec_number_spins_configur
     ampls_tensor = zeros(total_number_of_ampls, number_of_weights, boundary_dim)
     stds_tensor = zeros(total_number_of_ampls, number_of_weights, boundary_dim)
 
-    # case pcutoff = 0
+    # case pcutoff = 0 AND amplitude = 0
     # TODO: generalize to take into account integer boundary spin case
     for pcutoff = step:step:cutoff
 
