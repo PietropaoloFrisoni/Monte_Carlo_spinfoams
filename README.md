@@ -26,7 +26,7 @@ where:
 
 - `DATA_SL2CFOAM_FOLDER`: folder with fastwigxj tables where boosters (and possibly vertices) are retrieved/stored
 
-- `CUTOFF`: the maximum value of bulks spins
+- `CUTOFF`: the maximum value of bulk spins
 
 - `JB`: value of boundary spins
 
@@ -42,6 +42,4 @@ where:
 
 - `NUMBER_OF_TRIALS`: number of trials
 
-Additionally, you can specify the weights $\mu_1, \mu_2 \dots \mu_n$ on bulk faces *inside* the code script, with the vector `FACE_WEIGHTS_VEC`.
-
-Each bulk face with spin $j$ has dimension $(2j+1)^{\mu}$, and the code computes all amplitudes with provided weights.
+Additionally, you can specify the weights $\mu_1, \mu_2 \dots \mu_n$ on bulk faces *inside* the code script, with the vector `FACE_WEIGHTS_VEC`. Each bulk face with spin $j$ has dimension $(2j+1)^{\mu}$, and the code computes all amplitudes with provided weights.

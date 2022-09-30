@@ -177,9 +177,10 @@ for current_trial = 1:NUMBER_OF_TRIALS
                 mkpath(STORE_AMPLS_FINAL_FOLDER)
 
                 ampls = ampls_tensor[:, weight_index, ib_index]
-                df = DataFrame([ampls], ["amp"])
+                stds = stds_tensor[:, weight_index, ib_index]
 
-                CSV.write("$(STORE_AMPLS_FINAL_FOLDER)/ampls_cutoff_$(CUTOFF).csv", df)
+                df = DataFrame([ampls, stds], ["amp", "std"])
+                CSV.write("$(STORE_AMPLS_FINAL_FOLDER)/ampls_cutoff_$(CUTOFF)_trial_$(current_trial).csv", df)
 
             end
 
