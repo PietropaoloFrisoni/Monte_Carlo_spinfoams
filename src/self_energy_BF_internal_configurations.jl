@@ -1,4 +1,5 @@
 using Distributed
+using DelimitedFiles
 
 number_of_workers = nworkers()
 
@@ -25,7 +26,7 @@ JB = HalfInt(JB_FLOAT)
 
 # vector with weights on internal faces
 # each internal face with spin j has dimension (2j+1)^(weight)
-@everywhere FACE_WEIGHTS_VEC = [1.0, 1 / 6, 0.0, -1 / 6]
+@everywhere FACE_WEIGHTS_VEC = [1.0]
 
 printstyled("\ninitializing library...\n"; bold=true, color=:cyan)
 @everywhere init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER, 0.123) # fictitious Immirzi 
@@ -40,9 +41,10 @@ if (!isfile("$(SPINS_CONF_FOLDER)/spins_configurations_cutoff_$(CUTOFF_FLOAT).cs
 end
 
 STORE_AMPLS_FOLDER = "$(STORE_FOLDER)/data/self_energy/jb_$(JB_FLOAT)/exact/BF"
-mkpath(STORE_AMPLS_FOLDER)
+INTERNAL_CONTRIBUTIONS_FOLDER = "$(STORE_AMPLS_FOLDER)/internal_contributions"
+mkpath(INTERNAL_CONTRIBUTIONS_FOLDER)
 
-function self_energy_BF(cutoff, jb::HalfInt, spins_conf_folder::String, face_weights_vec, step=half(1))
+function self_energy_BF(cutoff, jb::HalfInt, spins_conf_folder::String, face_weights_vec, internal_contributions_folder::String, step=half(1))
 
     total_number_of_ampls = Int(2 * cutoff + 1)
     boundary_dim = Int(2 * jb + 1)
@@ -58,6 +60,8 @@ function self_energy_BF(cutoff, jb::HalfInt, spins_conf_folder::String, face_wei
         @load "$(spins_conf_folder)/configs_pcutoff_$(twice(pcutoff)/2).jld2" spins_configurations
 
         number_of_spins_configs = size(spins_configurations)[1]
+
+        all_contributions_internal = zeros(number_of_spins_configs, 7)
 
         # case pcutoff = 0 AND amplitude = 0
         # TODO: generalize to take into account integer boundary spin case
@@ -86,6 +90,9 @@ function self_energy_BF(cutoff, jb::HalfInt, spins_conf_folder::String, face_wei
                 end
             end
 
+            all_contributions_internal[spins_index, 1:6] .= spins_configurations[spins_index]
+            all_contributions_internal[spins_index, 7] = bulk_ampls[spins_index, 1, 1] # modify last two indices depending on what you want
+
         end
 
         for weight_index = 1:number_of_weights
@@ -99,6 +106,10 @@ function self_energy_BF(cutoff, jb::HalfInt, spins_conf_folder::String, face_wei
         display(ampls_tensor[index_pcutoff, :, :])
         println("\n")
 
+        open("$(internal_contributions_folder)/internal_pcutoff_$(twice(pcutoff)/2).csv", "w") do io
+            writedlm(io, all_contributions_internal, ',')
+        end
+
     end # partial cutoffs loop
 
     ampls_tensor
@@ -110,7 +121,7 @@ boundary_dim = Int(2 * JB + 1)
 number_of_weights = size(FACE_WEIGHTS_VEC)[1]
 
 printstyled("\nstarting computation with jb=$(JB) up to K=$(CUTOFF)...\n\n"; bold=true, color=:cyan)
-@time ampls_tensor = self_energy_BF(CUTOFF, JB, SPINS_CONF_FOLDER, FACE_WEIGHTS_VEC);
+@time ampls_tensor = self_energy_BF(CUTOFF, JB, SPINS_CONF_FOLDER, FACE_WEIGHTS_VEC, INTERNAL_CONTRIBUTIONS_FOLDER);
 
 printstyled("\nsaving dataframe...\n"; bold=true, color=:cyan)
 
@@ -126,10 +137,10 @@ for weight_index = 1:number_of_weights
         ampls = ampls_tensor[:, weight_index, ib_index]
         df = DataFrame([ampls], ["amp"])
 
-        CSV.write("$(STORE_AMPLS_FINAL_FOLDER)/ampls_cutoff_$(CUTOFF).csv", df)
+        #CSV.write("$(STORE_AMPLS_FINAL_FOLDER)/ampls_cutoff_$(CUTOFF).csv", df)
 
     end
-    
+
 end
 
 printstyled("\nCompleted\n\n"; bold=true, color=:blue)

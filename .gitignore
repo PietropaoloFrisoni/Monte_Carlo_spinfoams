@@ -1,6 +1,10 @@
 # Folder with private test codes
 private_folder
 
+# Folder with internal contributions of the self_energy
+*/internal_contributions
+*internal_pcutoff_*.csv
+
 # spins configurations and monte carlo indices
 *.jld2
 
