@@ -27,7 +27,8 @@ JB = HalfInt(JB_FLOAT)
 
 # vector with weights on internal faces
 # each internal face with spin j has dimension (2j+1)^(weight)
-@everywhere FACE_WEIGHTS_VEC = [1.0, 1 / 2, 1 / 5, 0.0]
+# @everywhere FACE_WEIGHTS_VEC = [1.0, 1 / 2, 1 / 5, 0.0]
+@everywhere FACE_WEIGHTS_VEC = [1 / 10]
 
 printstyled("initializing library...\n\n"; bold=true, color=:cyan)
 @everywhere init_sl2cfoam_next(DATA_SL2CFOAM_FOLDER, 0.123) # fictitious Immirzi 
