@@ -4,7 +4,7 @@
 #SBATCH --ntasks-per-node=48
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=0
-#SBATCH --time=0-06:00:00
+#SBATCH --time=2-00:00:00
 #SBATCH --job-name=self_energy
 #SBATCH --output=self_energy.log
 #SBATCH --error=self_energy.err
@@ -37,11 +37,11 @@ BASE_DIR=${ROOT_DIR}/Monte_Carlo_spinfoams
 SL2CFOAM_DATA_DIR=${SLURM_TMPDIR}
 CUTOFF=10
 JB=0.5
-DL_MIN=8
+DL_MIN=0
 DL_MAX=10
 IMMIRZI=0.1
 STORE_FOLDER=${BASE_DIR}
-NUMBER_OF_TRIALS=10
+NUMBER_OF_TRIALS=20
 
 
 # loading amplitudes and fastwig tables
@@ -69,7 +69,7 @@ cp ${FASTWIG_TABLES_PATH}/* $SLURM_TMPDIR/
 echo "Computing amplitudes with Monte Carlo..."
 echo
 
-for MONTE_CARLO_ITERATIONS in 100000
+for MONTE_CARLO_ITERATIONS in 1000 10000 100000
 do
 ${JULIA_DIR}/bin/julia -p $SLURM_TASKS_PER_NODE ${BASE_DIR}/src/self_energy_EPRL_MC.jl ${SL2CFOAM_DATA_DIR} ${CUTOFF} ${JB} ${DL_MIN} ${DL_MAX} ${IMMIRZI} ${STORE_FOLDER} ${MONTE_CARLO_ITERATIONS} ${NUMBER_OF_TRIALS}
 done
