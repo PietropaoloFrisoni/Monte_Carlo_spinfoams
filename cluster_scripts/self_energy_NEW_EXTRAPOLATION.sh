@@ -4,7 +4,7 @@
 #SBATCH --ntasks-per-node=48
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=0
-#SBATCH --time=1-00:00:00
+#SBATCH --time=2-00:00:00
 #SBATCH --job-name=self_energy
 #SBATCH --output=self_energy.log
 #SBATCH --error=self_energy.err
@@ -60,19 +60,10 @@ cp ${FASTWIG_TABLES_PATH}/* $SLURM_TMPDIR/
 
 # running codes
 
-#echo "Computing exact amplitudes..."
-#echo
-
-#${JULIA_DIR}/bin/julia -p $SLURM_TASKS_PER_NODE ${BASE_DIR}/src/self_energy_EPRL.jl ${SL2CFOAM_DATA_DIR} ${CUTOFF} ${JB} ${DL_MIN} ${DL_MAX} ${IMMIRZI} ${STORE_FOLDER}
-
-
-echo "Computing amplitudes with Monte Carlo..."
+echo "Computing exact amplitudes..."
 echo
 
-for MONTE_CARLO_ITERATIONS in 1000 10000 100000
-do
-${JULIA_DIR}/bin/julia -p $SLURM_TASKS_PER_NODE ${BASE_DIR}/src/self_energy_EPRL_MC_NEW_EXTRAPOLATION.jl ${SL2CFOAM_DATA_DIR} ${CUTOFF} ${JB} ${DL_MAX} ${IMMIRZI} ${STORE_FOLDER} ${MONTE_CARLO_ITERATIONS} ${NUMBER_OF_TRIALS}
-done
+${JULIA_DIR}/bin/julia -p $SLURM_TASKS_PER_NODE ${BASE_DIR}/src/self_energy_EPRL_NEW_EXTRAPOLATION.jl ${SL2CFOAM_DATA_DIR} ${CUTOFF} ${JB} ${DL_MAX} ${IMMIRZI} ${STORE_FOLDER}
 
 
 echo "Completed"

@@ -88,6 +88,8 @@ function self_energy_EPRL(cutoff, jb::HalfInt, Dl::Int, spins_conf_folder::Strin
         W2_extrapolated = 0.0
         W3_extrapolated = 0.0
 
+        negative_partial_amplitude_found = false
+
         @time @sync @distributed for spins_index in eachindex(spins_configurations)
 
             j23, j24, j25, j34, j35, j45 = spins_configurations[spins_index]
@@ -120,6 +122,10 @@ function self_energy_EPRL(cutoff, jb::HalfInt, Dl::Int, spins_conf_folder::Strin
             bulk_ampls_Dlm1[spins_index] *= dfj
             bulk_ampls_Dlm2[spins_index] *= dfj
 
+            if (bulk_ampls_Dl[spins_index] < 0 || bulk_ampls_Dlm1[spins_index] < 0 || bulk_ampls_Dlm2[spins_index] < 0)
+                negative_partial_amplitude_found = true
+            end
+
         end
 
         tampl_Dl = sum(bulk_ampls_Dl[:])
@@ -148,6 +154,8 @@ function self_energy_EPRL(cutoff, jb::HalfInt, Dl::Int, spins_conf_folder::Strin
         println("W_2 = $(ampls_W2[index_pcutoff])\n")
         println("W_3 = $(ampls_W3[index_pcutoff])\n")
         println("W_4 = $(ampls_W4[index_pcutoff])\n")
+
+        println("negative_partial_amplitude_found = $(negative_partial_amplitude_found)\n")
 
         println("\n")
 
