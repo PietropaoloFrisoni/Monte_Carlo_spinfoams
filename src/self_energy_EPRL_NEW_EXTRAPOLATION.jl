@@ -43,9 +43,8 @@ mkpath(STORE_AMPLS_FOLDER)
 function self_energy_EPRL(cutoff, jb::HalfInt, Dl::Int, spins_conf_folder::String, step=half(1))
 
     total_number_of_ampls = Int(2 * cutoff + 1)
-    boundary_dim = Int(2 * jb + 1)
 
-    # tensor with amplitudes
+    # amplitudes
     ampls_Dl = zeros(total_number_of_ampls)
     ampls_Dlm1 = zeros(total_number_of_ampls)
     ampls_Dlm2 = zeros(total_number_of_ampls)
