@@ -83,9 +83,10 @@ function self_energy_EPRL(cutoff, jb::HalfInt, Dl::Int, spins_conf_folder::Strin
         bulk_ampls_Dlm1 = SharedArray{Float64}(number_of_spins_configs)
         bulk_ampls_Dlm2 = SharedArray{Float64}(number_of_spins_configs)
 
-        W1_extrapolated = 0.0
-        W2_extrapolated = 0.0
-        W3_extrapolated = 0.0
+        W1_extrapolated = SharedArray{Float64}(1)
+        W2_extrapolated = SharedArray{Float64}(1)
+        W1_extrapolated[1] = 0.0
+        W2_extrapolated[1] = 0.0
 
         negative_partial_amplitude_found = false
 
@@ -111,10 +112,10 @@ function self_energy_EPRL(cutoff, jb::HalfInt, Dl::Int, spins_conf_folder::Strin
             bulk_ampls_Dlm2[spins_index] = dot(v_Dlm2.a[:, :, :, :, 1], v_Dlm2.a[:, :, :, :, 1])
 
             # accumulate W_1
-            W1_extrapolated += dfj * dot(v_extrapolated[:, :, :, :, 1], v_extrapolated[:, :, :, :, 1])
+            W1_extrapolated[1] += dfj * dot(v_extrapolated[:, :, :, :, 1], v_extrapolated[:, :, :, :, 1])
 
             # extrapolate and accumulate W_2
-            W2_extrapolated += ((bulk_ampls_Dl[spins_index] * bulk_ampls_Dlm2[spins_index] - bulk_ampls_Dlm1[spins_index]^2) / (bulk_ampls_Dl[spins_index] - 2 * bulk_ampls_Dlm1[spins_index] + bulk_ampls_Dlm2[spins_index]))
+            W2_extrapolated[1] += ((bulk_ampls_Dl[spins_index] * bulk_ampls_Dlm2[spins_index] - bulk_ampls_Dlm1[spins_index]^2) / (bulk_ampls_Dl[spins_index] - 2 * bulk_ampls_Dlm1[spins_index] + bulk_ampls_Dlm2[spins_index]))
 
             # face dims
             bulk_ampls_Dl[spins_index] *= dfj
@@ -132,14 +133,15 @@ function self_energy_EPRL(cutoff, jb::HalfInt, Dl::Int, spins_conf_folder::Strin
         tampl_Dlm2 = sum(bulk_ampls_Dlm2[:])
 
         # extrapolate W_3
+        W3_extrapolated = 0.0
         W3_extrapolated = ((tampl_Dl * tampl_Dlm2 - tampl_Dlm1^2) / (tampl_Dl - 2 * tampl_Dlm1 + tampl_Dlm2))
 
         ampls_Dl[index_pcutoff] = ampls_Dl[index_pcutoff-1] + tampl_Dl
         ampls_Dlm1[index_pcutoff] = ampls_Dlm1[index_pcutoff-1] + tampl_Dlm1
         ampls_Dlm2[index_pcutoff] = ampls_Dlm2[index_pcutoff-1] + tampl_Dlm2
 
-        ampls_W1[index_pcutoff] = ampls_W1[index_pcutoff-1] + W1_extrapolated
-        ampls_W2[index_pcutoff] = ampls_W2[index_pcutoff-1] + W2_extrapolated
+        ampls_W1[index_pcutoff] = ampls_W1[index_pcutoff-1] + W1_extrapolated[1]
+        ampls_W2[index_pcutoff] = ampls_W2[index_pcutoff-1] + W2_extrapolated[1]
         ampls_W3[index_pcutoff] = ampls_W3[index_pcutoff-1] + W3_extrapolated
         ampls_W4[index_pcutoff] = ((ampls_Dl[index_pcutoff] * ampls_Dlm2[index_pcutoff] - ampls_Dlm1[index_pcutoff]^2) / (ampls_Dl[index_pcutoff] - 2 * ampls_Dlm1[index_pcutoff] + ampls_Dlm2[index_pcutoff]))
 
