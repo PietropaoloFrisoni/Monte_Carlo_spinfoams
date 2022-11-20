@@ -31,11 +31,11 @@ printstyled("\ninitializing library with immirzi $(IMMIRZI)...\n"; bold=true, co
 SPINS_CONF_FOLDER = "$(STORE_FOLDER)/data/self_energy/jb_$(JB_FLOAT)/spins_configurations"
 
 # TODO: modify (this check can be misleading)
-if (!isfile("$(SPINS_CONF_FOLDER)/spins_configurations_cutoff_$(CUTOFF_FLOAT).csv"))
+#if (!isfile("$(SPINS_CONF_FOLDER)/spins_configurations_cutoff_$(CUTOFF_FLOAT).csv"))
     printstyled("\ncomputing spins configurations for jb=$(JB) up to K=$(CUTOFF)...\n\n"; bold=true, color=:cyan)
     @time self_energy_spins_conf(CUTOFF, JB, SPINS_CONF_FOLDER)
     println("done\n")
-end
+#end
 
 STORE_AMPLS_FOLDER = "$(STORE_FOLDER)/data/self_energy/jb_$(JB_FLOAT)/exact/EPRL/immirzi_$(IMMIRZI)/NEW_EXTRAPOLATION"
 mkpath(STORE_AMPLS_FOLDER)
