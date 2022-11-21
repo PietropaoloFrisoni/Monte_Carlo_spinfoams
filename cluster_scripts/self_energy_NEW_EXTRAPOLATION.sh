@@ -4,7 +4,7 @@
 #SBATCH --ntasks-per-node=48
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=0
-#SBATCH --time=2-00:00:00
+#SBATCH --time=0-08:00:00
 #SBATCH --job-name=self_energy
 #SBATCH --output=self_energy.log
 #SBATCH --error=self_energy.err
