@@ -35,7 +35,7 @@ mkpath(SPINS_CONF_FOLDER)
 
 # TODO: modify (this check can be misleading)
 if (!isfile("$(SPINS_CONF_FOLDER)/spins_configurations_cutoff_$(CUTOFF_FLOAT).csv"))
-    printstyled("computing spins configurations for jb=$(JB) up to K=$(CUTOFF)...\n\n"; bold=true, color=:cyan)
+    printstyled("\ncomputing spins configurations for jb=$(JB) up to K=$(CUTOFF)...\n\n"; bold=true, color=:cyan)
     @time self_energy_spins_conf(CUTOFF, JB, SPINS_CONF_FOLDER)
 end
 
