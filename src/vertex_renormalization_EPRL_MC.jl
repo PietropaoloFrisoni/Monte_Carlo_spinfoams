@@ -41,6 +41,8 @@ SPINS_MC_INDICES_FOLDER = "$(STORE_FOLDER)/data/vertex_renormalization/jb_$(JB_F
 STORE_AMPLS_FOLDER = "$(STORE_FOLDER)/data/vertex_renormalization/jb_$(JB_FLOAT)/monte_carlo/Nmc_$(MONTE_CARLO_ITERATIONS)/EPRL/immirzi_$(IMMIRZI)"
 mkpath(STORE_AMPLS_FOLDER)
 
+# CUTOFF, JB, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_INDICES_FOLDER, current_trial, FACE_WEIGHTS_VEC)
+
 function vertex_renormalization_EPRL(cutoff, jb::HalfInt, Dl::Int, Nmc::Int, vec_number_spins_configurations, spins_mc_folder::String, trial::Int, face_weights_vec, step=half(1))
 
     total_number_of_ampls = Int(2 * cutoff + 1)
@@ -67,9 +69,10 @@ function vertex_renormalization_EPRL(cutoff, jb::HalfInt, Dl::Int, Nmc::Int, vec
         @load "$(spins_mc_folder)/MC_left_intertwiners_draws_pcutoff_$(twice(pcutoff)/2)_trial_$(trial).jld2" MC_left_intertwiners_draws
         @load "$(spins_mc_folder)/MC_inner_intertwiners_draws_pcutoff_$(twice(pcutoff)/2)_trial_$(trial).jld2" MC_inner_intertwiners_draws
 
-        bulk_ampls = SharedArray{Float64}(Nmc)
+        bulk_ampls = SharedArray{Float64}(Nmc, number_of_weights, boundary_dim)
+        bulk_ampls[:, :, :] .= 0.0
 
-        @time @sync @distributed for bulk_ampls_index in eachindex(bulk_ampls)
+        @time @sync @distributed for bulk_ampls_index = 1:Nmc
 
             jpink = MC_draws[1, bulk_ampls_index]
             jblue = MC_draws[2, bulk_ampls_index]
@@ -222,7 +225,6 @@ function vertex_renormalization_EPRL(cutoff, jb::HalfInt, Dl::Int, Nmc::Int, vec
 
 
             # FINAL INTERTWINER CONTRACTION
-
             # after pre-contraction, outer left intertwiners don't exist anymore
 
             # TODO: consider using multiple threads and/or vectorize loops
@@ -324,63 +326,6 @@ mkpath(SPINS_MC_INDICES_FOLDER)
     vertex_renormalization_MC_sampling(CUTOFF, MONTE_CARLO_ITERATIONS, JB, SPINS_MC_INDICES_FOLDER, current_trial)
 end
 
-
-
-#=
-
-
-
-
-
-
-for current_trial = 1:NUMBER_OF_TRIALS 
-    
-    printstyled("\nstarting computation in trial $(current_trial) with Nmc=$(MONTE_CARLO_ITERATIONS), jb=$(JB) up to K=$(CUTOFF)...\n"; bold=true, color=:light_magenta)
-    @time ampls_tensor, stds_tensor = vertex_renormalization_EPRL(CUTOFF, JB, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_INDICES_FOLDER, current_trial, FACE_WEIGHTS_VEC)
-
-    printstyled("\nsaving dataframe...\n"; bold=true, color=:cyan)
-
-    for weight_index = 1:number_of_weights
-
-        weight = round(FACE_WEIGHTS_VEC[weight_index], digits=3)
-
-        for ib_index = 1:boundary_dim
-
-            STORE_AMPLS_FINAL_FOLDER = "$(STORE_AMPLS_FOLDER)/weight_$(weight)/ib_$(ib_index-1)"
-            mkpath(STORE_AMPLS_FINAL_FOLDER)
-
-            ampls = ampls_tensor[:, weight_index, ib_index]
-            stds = stds_tensor[:, weight_index, ib_index]
-
-            df = DataFrame([ampls, stds], ["amp", "std"])
-            CSV.write("$(STORE_AMPLS_FINAL_FOLDER)/ampls_cutoff_$(CUTOFF)_trial_$(current_trial).csv", df)
-
-        end
-
-    end
-
-end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 for Dl = DL_MIN:DL_MAX
 
     printstyled("\ncurrent Dl = $(Dl)...\n"; bold=true, color=:magenta)
@@ -397,16 +342,32 @@ for Dl = DL_MIN:DL_MAX
 
     for current_trial = 1:NUMBER_OF_TRIALS
 
-        printstyled("\ncomputing amplitudes in trial $(current_trial)...\n"; bold=true, color=:blue)
-        #@time ampls, stds = vertex_renormalization_EPRL(CUTOFF, JB, Dl, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_INDICES_FOLDER, current_trial)
+        printstyled("\ncomputing amplitudes...\n"; bold=true, color=:blue)
+        @time ampls_tensor, stds_tensor = vertex_renormalization_EPRL(CUTOFF, JB, Dl, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_INDICES_FOLDER, current_trial, FACE_WEIGHTS_VEC)
 
         printstyled("\nsaving dataframe...\n"; bold=true, color=:cyan)
-        df = DataFrame([ampls, stds], ["amp", "std"])
 
-        CSV.write("$(STORE_AMPLS_FOLDER_DL)/ampls_cutoff_$(CUTOFF)_ib_0.0_trial_$(number_of_previously_stored_trials + current_trial).csv", df)
+        for weight_index = 1:number_of_weights
+
+            weight = round(FACE_WEIGHTS_VEC[weight_index], digits=3)
+
+            for ib_index = 1:boundary_dim
+
+                STORE_AMPLS_FINAL_FOLDER = "$(STORE_AMPLS_FOLDER_DL)/weight_$(weight)/ib_$(ib_index-1)"
+                mkpath(STORE_AMPLS_FINAL_FOLDER)
+
+                ampls = ampls_tensor[:, weight_index, ib_index]
+                stds = stds_tensor[:, weight_index, ib_index]
+
+                df = DataFrame([ampls, stds], ["amp", "std"])
+                CSV.write("$(STORE_AMPLS_FINAL_FOLDER)/ampls_cutoff_$(CUTOFF)_trial_$(current_trial).csv", df)
+
+            end
+
+        end
 
     end
 
 end
-=#
+
 printstyled("\nCompleted\n\n"; bold=true, color=:blue)
