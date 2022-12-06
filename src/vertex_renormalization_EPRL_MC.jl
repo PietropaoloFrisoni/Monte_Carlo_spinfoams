@@ -342,7 +342,7 @@ for Dl = DL_MIN:DL_MAX
 
     for current_trial = 1:NUMBER_OF_TRIALS
 
-        printstyled("\ncomputing amplitudes...\n"; bold=true, color=:blue)
+        printstyled("\ncomputing amplitudes in trial $(current_trial)...\n"; bold=true, color=:blue)
         @time ampls_tensor, stds_tensor = vertex_renormalization_EPRL(CUTOFF, JB, Dl, MONTE_CARLO_ITERATIONS, vec_number_spins_configurations, SPINS_MC_INDICES_FOLDER, current_trial, FACE_WEIGHTS_VEC)
 
         printstyled("\nsaving dataframe...\n"; bold=true, color=:cyan)
