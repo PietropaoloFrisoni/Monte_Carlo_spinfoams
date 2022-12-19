@@ -13,8 +13,8 @@
 # folders
 
 ROOT_DIR=/home/frisus95/projects/def-vidotto/frisus95
-JULIA_DIR=${ROOT_DIR}/julia-*
-SL2CFOAM_DIR=${ROOT_DIR}/sl2cfoam*
+JULIA_DIR=${ROOT_DIR}/julia-1.8.0
+SL2CFOAM_DIR=${ROOT_DIR}/sl2cfoam-next-dev
 FASTWIG_TABLES_PATH=${SL2CFOAM_DIR}/data_sl2cfoam
 
 export LD_LIBRARY_PATH="${SL2CFOAM_DIR}/lib":$LD_LIBRARY_PATH
@@ -36,8 +36,8 @@ CODE_TO_RUN=EPRL_vertex_precomputation
 SL2CFOAM_DATA_DIR=${SLURM_TMPDIR}
 CUTOFF=10
 JB=0.5
-DL_MIN=0
-DL_MAX=8
+DL_MIN=10
+DL_MAX=12
 IMMIRZI=0.1
 STORE_FOLDER=${BASE_DIR}
 COMPUTE_SPINS_CONFIGURATIONS=true
@@ -50,7 +50,7 @@ AMPLS_DIR=${BASE_DIR}
 echo "Extracting previous boosters and amplitudes to: $SLURM_TMPDIR ..."
 echo
 
-tar -xvf ${BASE_DIR}/${CODE_TO_RUN}_SHELL_MIN_${DL_MIN}_SHELL_MAX_0_IMMIRZI_${IMMIRZI}_CUTOFF_${CUTOFF}.tar.gz -C $SLURM_TMPDIR
+tar -xvf ${ROOT_DIR}/${CODE_TO_RUN}_SHELL_MIN_0_SHELL_MAX_10_IMMIRZI_${IMMIRZI}_CUTOFF_${CUTOFF}.tar.gz -C $SLURM_TMPDIR
 
 
 
@@ -81,7 +81,7 @@ echo
 
 cd $SLURM_TMPDIR
 
-tar -czvf ${AMPLS_DIR}/${CODE_TO_RUN}_SHELL_MIN_${DL_MIN}_SHELL_MAX_${DL_MAX}_IMMIRZI_${IMMIRZI}_CUTOFF_${CUTOFF}.tar.gz vertex/
+tar -czvf ${ROOT_DIR}/${CODE_TO_RUN}_SHELL_MIN_0_SHELL_MAX_${DL_MAX}_IMMIRZI_${IMMIRZI}_CUTOFF_${CUTOFF}.tar.gz vertex/
 
 
 echo "Completed"
