@@ -1,14 +1,14 @@
-# TODO: AGGIORNA
-
 cff-version: 1.2.0
 message: 'If you use this software, please cite it as below.'
 authors:
     - family-names: Frisoni
       given-names: Pietropaolo 
+      orcid: https://orcid.org/0000-0002-0099-0409
     - family-names: Pietro
-      given-names: Donà       
-title: TODO
+      given-names: Donà 
+      orcid: https://orcid.org/0000-0001-7341-0682      
+title: 'Summing bulk quantum numbers with Monte Carlo in spin foam theories'
 version: 1.0.1
 doi: TODO
-date-released: TODO
+date-released: 2023-01-25
 url: https://github.com/PietropaoloFrisoni/Monte_Carlo_spinfoams
