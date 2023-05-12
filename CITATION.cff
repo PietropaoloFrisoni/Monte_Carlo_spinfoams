@@ -9,6 +9,6 @@ authors:
       orcid: https://orcid.org/0000-0001-7341-0682      
 title: 'Summing bulk quantum numbers with Monte Carlo in spin foam theories'
 version: 1.0.1
-doi: TODO
+doi: https://doi.org/10.1103/PhysRevD.107.106008
 date-released: 2023-01-25
 url: https://github.com/PietropaoloFrisoni/Monte_Carlo_spinfoams
